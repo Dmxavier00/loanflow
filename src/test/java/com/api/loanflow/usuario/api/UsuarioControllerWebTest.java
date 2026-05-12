@@ -1,12 +1,12 @@
 package com.api.loanflow.usuario.api;
 
-import com.api.loanflow.shared.exception.RecursoNaoEncontradoException;
+import com.api.loanflow.compartilhado.excecao.RecursoNaoEncontradoException;
 import com.api.loanflow.usuario.api.dto.ContaBancariaResponse;
 import com.api.loanflow.usuario.api.dto.UsuarioResponse;
-import com.api.loanflow.usuario.application.UsuarioService;
-import com.api.loanflow.usuario.domain.Role;
-import com.api.loanflow.usuario.domain.TipoContaBancaria;
-import com.api.loanflow.usuario.domain.UsuarioStatus;
+import com.api.loanflow.usuario.aplicacao.UsuarioService;
+import com.api.loanflow.usuario.dominio.Role;
+import com.api.loanflow.usuario.dominio.TipoContaBancaria;
+import com.api.loanflow.usuario.dominio.UsuarioStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

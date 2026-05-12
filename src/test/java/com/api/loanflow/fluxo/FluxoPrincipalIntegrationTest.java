@@ -1,12 +1,12 @@
 package com.api.loanflow.fluxo;
 
-import com.api.loanflow.contrato.domain.ContratoStatus;
-import com.api.loanflow.contrato.infrastructure.persistence.ContratoRepository;
-import com.api.loanflow.parcela.infrastructure.persistence.ParcelaRepository;
-import com.api.loanflow.proposta.domain.PropostaStatus;
-import com.api.loanflow.proposta.infrastructure.persistence.PropostaRepository;
-import com.api.loanflow.usuario.infrastructure.persistence.CredorRepository;
-import com.api.loanflow.usuario.infrastructure.persistence.UsuarioRepository;
+import com.api.loanflow.contrato.dominio.ContratoStatus;
+import com.api.loanflow.contrato.infraestrutura.persistencia.ContratoRepository;
+import com.api.loanflow.parcela.infraestrutura.persistencia.ParcelaRepository;
+import com.api.loanflow.proposta.dominio.PropostaStatus;
+import com.api.loanflow.proposta.infraestrutura.persistencia.PropostaRepository;
+import com.api.loanflow.usuario.infraestrutura.persistencia.CredorRepository;
+import com.api.loanflow.usuario.infraestrutura.persistencia.UsuarioRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

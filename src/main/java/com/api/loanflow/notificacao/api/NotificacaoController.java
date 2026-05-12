@@ -1,8 +1,8 @@
 package com.api.loanflow.notificacao.api;
 
 import com.api.loanflow.notificacao.api.dto.NotificacaoResponse;
-import com.api.loanflow.notificacao.application.NotificacaoService;
-import com.api.loanflow.notificacao.domain.TipoNotificacao;
+import com.api.loanflow.notificacao.aplicacao.NotificacaoService;
+import com.api.loanflow.notificacao.dominio.TipoNotificacao;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

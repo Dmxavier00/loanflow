@@ -1,9 +1,9 @@
 package com.api.loanflow.proposta.api;
 
-import com.api.loanflow.proposta.application.PropostaService;
+import com.api.loanflow.proposta.aplicacao.PropostaService;
 import com.api.loanflow.proposta.api.dto.PropostaResponse;
-import com.api.loanflow.proposta.domain.CategoriaFinalidade;
-import com.api.loanflow.proposta.domain.PropostaStatus;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
+import com.api.loanflow.proposta.dominio.PropostaStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -1,7 +1,7 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.EstadoCivil;
-import com.api.loanflow.usuario.domain.TipoDocumentoIdentidade;
+import com.api.loanflow.usuario.dominio.EstadoCivil;
+import com.api.loanflow.usuario.dominio.TipoDocumentoIdentidade;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,8 +1,8 @@
 package com.api.loanflow.contrato.api.dto;
 
-import com.api.loanflow.contrato.domain.AssinaturaEletronica;
-import com.api.loanflow.contrato.domain.TipoAceite;
-import com.api.loanflow.usuario.domain.Role;
+import com.api.loanflow.contrato.dominio.AssinaturaEletronica;
+import com.api.loanflow.contrato.dominio.TipoAceite;
+import com.api.loanflow.usuario.dominio.Role;
 
 import java.time.LocalDateTime;
 

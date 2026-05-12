@@ -1,8 +1,8 @@
 package com.api.loanflow.parcela.api;
 
 import com.api.loanflow.parcela.api.dto.ParcelaResponse;
-import com.api.loanflow.parcela.application.ParcelaService;
-import com.api.loanflow.parcela.domain.ParcelaStatus;
+import com.api.loanflow.parcela.aplicacao.ParcelaService;
+import com.api.loanflow.parcela.dominio.ParcelaStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;

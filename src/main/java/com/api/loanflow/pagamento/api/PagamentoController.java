@@ -2,7 +2,7 @@ package com.api.loanflow.pagamento.api;
 
 import com.api.loanflow.pagamento.api.dto.PagamentoResponse;
 import com.api.loanflow.pagamento.api.dto.RegistrarPagamentoRequest;
-import com.api.loanflow.pagamento.application.PagamentoService;
+import com.api.loanflow.pagamento.aplicacao.PagamentoService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;

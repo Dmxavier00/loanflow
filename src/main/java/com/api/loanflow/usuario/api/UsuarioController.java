@@ -7,7 +7,7 @@ import com.api.loanflow.usuario.api.dto.AtualizarPerfilRequest;
 import com.api.loanflow.usuario.api.dto.ContaBancariaResponse;
 import com.api.loanflow.usuario.api.dto.CredorLookupResponse;
 import com.api.loanflow.usuario.api.dto.UsuarioResponse;
-import com.api.loanflow.usuario.application.UsuarioService;
+import com.api.loanflow.usuario.aplicacao.UsuarioService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

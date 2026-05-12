@@ -1,7 +1,7 @@
 package com.api.loanflow.auditoria.api.dto;
 
-import com.api.loanflow.auditoria.domain.Auditoria;
-import com.api.loanflow.auditoria.domain.AuditoriaAcao;
+import com.api.loanflow.auditoria.dominio.Auditoria;
+import com.api.loanflow.auditoria.dominio.AuditoriaAcao;
 
 import java.time.LocalDateTime;
 

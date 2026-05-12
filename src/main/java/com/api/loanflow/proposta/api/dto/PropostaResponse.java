@@ -1,8 +1,8 @@
 package com.api.loanflow.proposta.api.dto;
 
-import com.api.loanflow.proposta.domain.CategoriaFinalidade;
-import com.api.loanflow.proposta.domain.Proposta;
-import com.api.loanflow.proposta.domain.PropostaStatus;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
+import com.api.loanflow.proposta.dominio.Proposta;
+import com.api.loanflow.proposta.dominio.PropostaStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
 package com.api.loanflow.parcela.api;
 
-import com.api.loanflow.parcela.application.ParcelaService;
+import com.api.loanflow.parcela.aplicacao.ParcelaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

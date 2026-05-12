@@ -33,17 +33,17 @@ build/
 .vscode/
 
 ### Front-end React ###
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-frontend/vite.out.log
-frontend/vite.err.log
+apresentacao/node_modules/
+apresentacao/dist/
+apresentacao/.env
+apresentacao/vite.out.log
+apresentacao/vite.err.log
 
 ### Ferramentas locais ###
 .tools/
 
 ### Artefatos gerados em execução ###
-artifacts/
-contracts/
+artefatos/
+contratos/
 spring-boot-run.out
 spring-boot-run.err

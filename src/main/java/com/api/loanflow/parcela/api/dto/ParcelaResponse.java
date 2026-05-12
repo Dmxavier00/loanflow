@@ -1,7 +1,7 @@
 package com.api.loanflow.parcela.api.dto;
 
-import com.api.loanflow.parcela.domain.Parcela;
-import com.api.loanflow.parcela.domain.ParcelaStatus;
+import com.api.loanflow.parcela.dominio.Parcela;
+import com.api.loanflow.parcela.dominio.ParcelaStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

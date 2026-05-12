@@ -1,6 +1,6 @@
 package com.api.loanflow.proposta.api.dto;
 
-import com.api.loanflow.proposta.domain.CategoriaFinalidade;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;

@@ -1,0 +1,324 @@
+@baseUrl = http://localhost:8080
+@tokenSolicitante = cole_o_token_do_solicitante_aqui
+@tokenCredor = cole_o_token_do_credor_aqui
+@tokenAdmin = cole_o_token_do_admin_aqui
+@usuarioId = 1
+@credorId = 1
+@propostaId = 1
+@contratoId = 1
+@parcelaId = 1
+@pagamentoId = 1
+
+### Observação
+# Para autenticar sem cadastrar novos usuários via API, prefira os demos
+# documentados em documentacao/usuarios-demo.md.
+
+### 1. Registrar solicitante
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Davi Solicitante",
+  "cpf": "529.982.247-25",
+  "email": "solicitante@loanflow.com",
+  "estadoCivil": "SOLTEIRO",
+  "nacionalidade": "Brasileira",
+  "profissao": "Analista",
+  "dataNascimento": "1994-03-12",
+  "telefone": "11999990000",
+  "tipoDocumentoIdentidade": "RG",
+  "documentoIdentidade": "12345678",
+  "orgaoEmissor": "SSP-SP",
+  "pessoaExpostaPoliticamente": false,
+  "endereco": {
+    "cep": "01001-000",
+    "logradouro": "Praça da Sé",
+    "numero": "100",
+    "complemento": "Sala 4",
+    "bairro": "Centro",
+    "cidade": "São Paulo",
+    "uf": "SP"
+  },
+  "senha": "Senha@123",
+  "papel": "SOLICITANTE",
+  "rendaMensal": 3000.00,
+  "tipoOcupacao": "CLT",
+  "saldoDisponivelSimulado": null,
+  "contaBancaria": {
+    "banco": "Banco do Brasil",
+    "agencia": "1234",
+    "numeroConta": "987654",
+    "tipoConta": "CORRENTE",
+    "chavePix": "solicitante@loanflow.com"
+  }
+}
+
+### 2. Registrar credor
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Davi Credor",
+  "cpf": "111.444.777-35",
+  "email": "credor@loanflow.com",
+  "estadoCivil": "CASADO",
+  "nacionalidade": "Brasileira",
+  "profissao": "Investidor",
+  "dataNascimento": "1988-08-21",
+  "telefone": "21988881111",
+  "tipoDocumentoIdentidade": "CNH",
+  "documentoIdentidade": "99887766",
+  "orgaoEmissor": "DETRAN-RJ",
+  "pessoaExpostaPoliticamente": false,
+  "endereco": {
+    "cep": "20040-020",
+    "logradouro": "Rua da Assembleia",
+    "numero": "50",
+    "complemento": "Conjunto 502",
+    "bairro": "Centro",
+    "cidade": "Rio de Janeiro",
+    "uf": "RJ"
+  },
+  "senha": "Senha@123",
+  "papel": "CREDOR",
+  "rendaMensal": null,
+  "tipoOcupacao": null,
+  "saldoDisponivelSimulado": 10000.00,
+  "contaBancaria": {
+    "banco": "Inter",
+    "agencia": "5678",
+    "numeroConta": "123456",
+    "tipoConta": "CORRENTE",
+    "chavePix": "credor@loanflow.com"
+  }
+}
+
+### 3. Registrar admin
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nome": "Davi Admin",
+  "cpf": "390.533.447-05",
+  "email": "admin@loanflow.com",
+  "estadoCivil": "SOLTEIRO",
+  "nacionalidade": "Brasileira",
+  "profissao": "Administrador",
+  "dataNascimento": "1986-05-14",
+  "telefone": "31977771111",
+  "tipoDocumentoIdentidade": "RG",
+  "documentoIdentidade": "55443322",
+  "orgaoEmissor": "SSP-MG",
+  "pessoaExpostaPoliticamente": false,
+  "endereco": {
+    "cep": "30130-110",
+    "logradouro": "Avenida Afonso Pena",
+    "numero": "900",
+    "complemento": "Sala 12",
+    "bairro": "Centro",
+    "cidade": "Belo Horizonte",
+    "uf": "MG"
+  },
+  "senha": "Senha@123",
+  "papel": "ADMIN",
+  "rendaMensal": null,
+  "tipoOcupacao": null,
+  "saldoDisponivelSimulado": null
+}
+
+### 4. Login solicitante
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "alice.solicitante.demo@loanflow.com",
+  "senha": "Senha@123"
+}
+
+### 5. Login credor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "bruno.credor.demo@loanflow.com",
+  "senha": "Senha@123"
+}
+
+### 6. Login admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "carla.admin.demo@loanflow.com",
+  "senha": "Senha@123"
+}
+
+### 7. Ver usuário autenticado
+GET {{baseUrl}}/usuarios/me
+Authorization: Bearer {{tokenSolicitante}}
+
+### 8. Atualizar usuário autenticado
+PUT {{baseUrl}}/usuarios/me
+Authorization: Bearer {{tokenSolicitante}}
+Content-Type: application/json
+
+{
+  "nome": "Davi Solicitante Atualizado"
+}
+
+### 9. Listar usuários como admin
+GET {{baseUrl}}/usuarios
+Authorization: Bearer {{tokenAdmin}}
+
+### 10. Bloquear usuário como admin
+POST {{baseUrl}}/usuarios/{{usuarioId}}/bloquear
+Authorization: Bearer {{tokenAdmin}}
+
+### 11. Reativar usuário como admin
+POST {{baseUrl}}/usuarios/{{usuarioId}}/reativar
+Authorization: Bearer {{tokenAdmin}}
+
+### 12. Criar proposta como solicitante
+POST {{baseUrl}}/propostas
+Authorization: Bearer {{tokenSolicitante}}
+Content-Type: application/json
+
+{
+  "valorSolicitado": 2500.00,
+  "taxaJuros": 5.00,
+  "prazoMeses": 6,
+  "categoriaFinalidade": "CAPITAL_DE_GIRO",
+  "finalidade": "Capital de giro para microempreendimento",
+  "descricaoDetalhada": "Compra de estoque, reforço de caixa e reorganização do fluxo de pagamento."
+}
+
+### 13. Atualizar proposta em rascunho
+PUT {{baseUrl}}/propostas/{{propostaId}}
+Authorization: Bearer {{tokenSolicitante}}
+Content-Type: application/json
+
+{
+  "valorSolicitado": 2600.00,
+  "taxaJuros": 5.00,
+  "prazoMeses": 6,
+  "categoriaFinalidade": "CAPITAL_DE_GIRO",
+  "finalidade": "Capital de giro ajustado antes do envio",
+  "descricaoDetalhada": "Ajuste do valor para cobrir estoque e capital de giro por mais um ciclo."
+}
+
+### 14. Submeter proposta
+POST {{baseUrl}}/propostas/{{propostaId}}/submeter
+Authorization: Bearer {{tokenSolicitante}}
+
+### 15. Listar minhas propostas
+GET {{baseUrl}}/propostas/minhas
+Authorization: Bearer {{tokenSolicitante}}
+
+### 16. Listar propostas por status
+GET {{baseUrl}}/propostas/status/SUBMETIDA
+Authorization: Bearer {{tokenSolicitante}}
+
+### 17. Listar propostas em análise como credor
+GET {{baseUrl}}/propostas/analise
+Authorization: Bearer {{tokenCredor}}
+
+### 18. Consultar proposta
+GET {{baseUrl}}/propostas/{{propostaId}}
+Authorization: Bearer {{tokenSolicitante}}
+
+### 19. Iniciar análise como credor
+POST {{baseUrl}}/propostas/{{propostaId}}/iniciar-analise
+Authorization: Bearer {{tokenCredor}}
+
+### 20. Aprovar proposta como credor
+POST {{baseUrl}}/propostas/{{propostaId}}/aprovar
+Authorization: Bearer {{tokenCredor}}
+
+### 21. Gerar contrato
+POST {{baseUrl}}/contratos/proposta/{{propostaId}}/gerar
+Authorization: Bearer {{tokenCredor}}
+
+### 22. Consultar contrato
+GET {{baseUrl}}/contratos/{{contratoId}}
+Authorization: Bearer {{tokenSolicitante}}
+
+### 23. Opcional: cancelar contrato antes da formalização
+POST {{baseUrl}}/contratos/{{contratoId}}/cancelar
+Authorization: Bearer {{tokenCredor}}
+
+### 24. Assinar contrato como solicitante
+POST {{baseUrl}}/contratos/{{contratoId}}/assinar
+Authorization: Bearer {{tokenSolicitante}}
+Content-Type: application/json
+
+{
+  "aceite": true
+}
+
+### 25. Assinar contrato como credor
+POST {{baseUrl}}/contratos/{{contratoId}}/assinar
+Authorization: Bearer {{tokenCredor}}
+Content-Type: application/json
+
+{
+  "aceite": true
+}
+
+### 26. Baixar contrato em PDF
+GET {{baseUrl}}/contratos/{{contratoId}}/download
+Authorization: Bearer {{tokenSolicitante}}
+
+### 27. Listar parcelas do contrato
+GET {{baseUrl}}/contratos/{{contratoId}}/parcelas
+Authorization: Bearer {{tokenSolicitante}}
+
+### 28. Consultar parcela
+GET {{baseUrl}}/parcelas/{{parcelaId}}
+Authorization: Bearer {{tokenSolicitante}}
+
+### 29. Registrar pagamento manual
+POST {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos
+Authorization: Bearer {{tokenSolicitante}}
+Content-Type: application/json
+
+{
+  "valorPago": 100.00,
+  "formaPagamento": "PIX_MANUAL",
+  "comprovante": "Comprovante simulado para protótipo"
+}
+
+### 30. Listar pagamentos da parcela
+GET {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos
+Authorization: Bearer {{tokenSolicitante}}
+
+### 31. Opcional: cancelar pagamento manual
+POST {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos/{{pagamentoId}}/cancelar
+Authorization: Bearer {{tokenSolicitante}}
+
+### 32. Listar notificações do usuário
+GET {{baseUrl}}/notificacoes
+Authorization: Bearer {{tokenSolicitante}}
+
+### 33. Listar notificações com filtro
+GET {{baseUrl}}/notificacoes?lida=false&tipo=CONTRATO
+Authorization: Bearer {{tokenSolicitante}}
+
+### 34. Listar auditorias como admin
+GET {{baseUrl}}/admin/auditorias
+Authorization: Bearer {{tokenAdmin}}
+
+### 35. Listar auditorias com filtro
+GET {{baseUrl}}/admin/auditorias?acao=ASSINAR&entidadeTipo=Contrato&entidadeId={{contratoId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### 36. Dashboard admin
+GET {{baseUrl}}/admin/dashboard
+Authorization: Bearer {{tokenAdmin}}
+
+### 37. Marcar parcelas vencidas como em atraso
+POST {{baseUrl}}/admin/parcelas/marcar-atrasadas
+Authorization: Bearer {{tokenAdmin}}
+
+### 38. Opcional: cancelar proposta antes de aprovar/contratar
+POST {{baseUrl}}/propostas/{{propostaId}}/cancelar
+Authorization: Bearer {{tokenSolicitante}}

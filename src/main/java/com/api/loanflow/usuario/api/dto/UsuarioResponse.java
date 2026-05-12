@@ -1,10 +1,10 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.EstadoCivil;
-import com.api.loanflow.usuario.domain.Role;
-import com.api.loanflow.usuario.domain.TipoDocumentoIdentidade;
-import com.api.loanflow.usuario.domain.Usuario;
-import com.api.loanflow.usuario.domain.UsuarioStatus;
+import com.api.loanflow.usuario.dominio.EstadoCivil;
+import com.api.loanflow.usuario.dominio.Role;
+import com.api.loanflow.usuario.dominio.TipoDocumentoIdentidade;
+import com.api.loanflow.usuario.dominio.Usuario;
+import com.api.loanflow.usuario.dominio.UsuarioStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -1,7 +1,7 @@
 package com.api.loanflow.contrato.api.dto;
 
-import com.api.loanflow.contrato.domain.Contrato;
-import com.api.loanflow.contrato.domain.ContratoStatus;
+import com.api.loanflow.contrato.dominio.Contrato;
+import com.api.loanflow.contrato.dominio.ContratoStatus;
 
 import java.time.LocalDateTime;
 

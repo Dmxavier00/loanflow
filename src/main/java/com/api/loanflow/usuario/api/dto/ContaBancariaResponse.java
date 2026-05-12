@@ -1,7 +1,7 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.ContaBancaria;
-import com.api.loanflow.usuario.domain.TipoContaBancaria;
+import com.api.loanflow.usuario.dominio.ContaBancaria;
+import com.api.loanflow.usuario.dominio.TipoContaBancaria;
 
 import java.time.LocalDateTime;
 

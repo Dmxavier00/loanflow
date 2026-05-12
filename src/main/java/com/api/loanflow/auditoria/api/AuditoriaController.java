@@ -1,8 +1,8 @@
 package com.api.loanflow.auditoria.api;
 
 import com.api.loanflow.auditoria.api.dto.AuditoriaResponse;
-import com.api.loanflow.auditoria.domain.AuditoriaAcao;
-import com.api.loanflow.auditoria.infrastructure.persistence.AuditoriaRepository;
+import com.api.loanflow.auditoria.dominio.AuditoriaAcao;
+import com.api.loanflow.auditoria.infraestrutura.persistencia.AuditoriaRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,8 +1,8 @@
 package com.api.loanflow.contrato.api;
 
-import com.api.loanflow.contrato.application.ContratoService;
+import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.contrato.api.dto.ContratoResponse;
-import com.api.loanflow.contrato.domain.ContratoStatus;
+import com.api.loanflow.contrato.dominio.ContratoStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
