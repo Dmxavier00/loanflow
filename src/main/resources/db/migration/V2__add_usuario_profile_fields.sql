@@ -1,0 +1,10 @@
+alter table usuarios add estado_civil nvarchar(30) null;
+alter table usuarios add nacionalidade nvarchar(60) null;
+alter table usuarios add profissao nvarchar(120) null;
+alter table usuarios add cep nvarchar(9) null;
+alter table usuarios add logradouro nvarchar(160) null;
+alter table usuarios add numero nvarchar(20) null;
+alter table usuarios add complemento nvarchar(80) null;
+alter table usuarios add bairro nvarchar(80) null;
+alter table usuarios add cidade nvarchar(80) null;
+alter table usuarios add uf nvarchar(2) null;

@@ -1,0 +1,17 @@
+package com.api.loanflow.auditoria.domain;
+
+public enum AuditoriaAcao {
+	CRIAR,
+	ATUALIZAR,
+	SUBMETER,
+	INICIAR_ANALISE,
+	ACEITAR,
+	APROVAR,
+	REJEITAR,
+	CANCELAR,
+	GERAR_CONTRATO,
+	ASSINAR,
+	FORMALIZAR,
+	GERAR_PARCELAS,
+	REGISTRAR_PAGAMENTO
+}

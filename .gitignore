@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Front-end React ###
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/vite.out.log
+frontend/vite.err.log
+
+### Ferramentas locais ###
+.tools/
+
+### Artefatos gerados em execução ###
+artifacts/
+contracts/
+spring-boot-run.out
+spring-boot-run.err
