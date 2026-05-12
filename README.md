@@ -1,95 +1,132 @@
 # LoanFlow
 
-Back-end Spring Boot para um protótipo acadêmico de plataforma web de microcrédito P2P com assinatura eletrônica simulada de contratos.
+Protótipo acadêmico de uma plataforma web de microcrédito P2P para TCC, com API Spring Boot, interface React e fluxo completo de proposta, contrato, assinatura eletrônica simulada, parcelas, pagamentos e auditoria.
 
-O foco do projeto é demonstrar o fluxo funcional do TCC: cadastro de usuários, autenticação JWT, proposta de crédito, análise por credor, geração de contrato, aceite eletrônico, hash do documento, parcelas, pagamento manual e trilha de auditoria.
+## Visão Geral
+
+O projeto foi construído para demonstrar um fluxo funcional de concessão de crédito entre pessoas, sem depender de integração bancária real. O objetivo é cobrir a jornada principal da operação:
+
+- cadastro e autenticação com JWT
+- perfis de `SOLICITANTE`, `CREDOR` e `ADMIN`
+- criação, análise e aprovação de propostas
+- geração de contrato em PDF com hash do documento
+- assinatura eletrônica simulada por aceite autenticado
+- geração de parcelas e registro manual de pagamentos
+- notificações e trilha de auditoria
+- dashboard administrativo básico
 
 ## Stack
+
+### Back-end
 
 - Java 17
 - Spring Boot 4
 - Spring Security
-- JWT
 - Spring Data JPA
-- SQL Server
+- Bean Validation
 - Flyway
+- SQL Server
+- JWT
 - Maven
 
-## Escopo do Protótipo
+### Front-end
 
-Este projeto não implementa operação financeira real. Para manter o TCC executável, ficam fora do escopo:
+- React 18
+- React Router
+- Vite
+- Fetch API nativa
 
-- PIX automático
-- integração bancária
-- bureaus de crédito
-- KYC regulatório completo
-- antifraude avançado
-- assinatura ICP-Brasil
-- certificado A1/A3
+### Testes
 
-A assinatura eletrônica do protótipo é feita por aceite explícito de usuário autenticado, com hash do contrato e registro em auditoria.
+- JUnit 5
+- Spring Boot Test
+- Spring Security Test
+- H2 para testes automatizados
 
-## Arquitetura
-
-O projeto usa uma arquitetura modular simples por domínio:
+## Estrutura do Projeto
 
 ```text
-src/main/java/com/api/loanflow
-|-- auth
-|-- security
-|-- shared
-|-- usuario
-|-- proposta
-|-- contrato
-|-- parcela
-|-- pagamento
-|-- notificacao
-|-- auditoria
-`-- admin
+loanflow/
+|-- src/main/java/com/api/loanflow
+|   |-- administracao
+|   |-- auditoria
+|   |-- autenticacao
+|   |-- contrato
+|   |-- notificacao
+|   |-- pagamento
+|   |-- parcela
+|   |-- proposta
+|   |-- seguranca
+|   |-- compartilhado
+|   `-- usuario
+|-- src/main/resources/db/migration
+|-- src/test
+|-- apresentacao
+|-- documentacao
+`-- roteiros
 ```
 
-Dentro dos módulos principais:
+Organização interna dos módulos principais:
 
 ```text
 api                     Controllers e DTOs
-application             Services e casos de uso
-domain                  Entidades JPA e enums
-infrastructure          Persistência e detalhes técnicos
-infrastructure/persistence
-                        Repositories Spring Data JPA
+aplicacao               Casos de uso e serviços
+dominio                 Entidades e enums
+infraestrutura          Persistência e detalhes técnicos
+infraestrutura/persistencia
+                        Repositories Spring Data
 ```
 
-O pacote `shared` guarda recursos transversais, como exceções e serviços de hash. O pacote `security` concentra JWT, filtro de autenticação e configuração do Spring Security.
+## Funcionalidades Entregues
+
+- autenticação com JWT via `/auth/register` e `/auth/login`
+- gestão do usuário autenticado em `/usuarios/me`
+- cadastro e manutenção de conta bancária
+- consulta de credores para composição do fluxo
+- criação, edição, submissão, aceite, análise, aprovação, rejeição e cancelamento de propostas
+- geração, consulta, assinatura, download e cancelamento de contratos
+- geração e consulta de parcelas
+- registro e cancelamento de pagamentos manuais
+- notificações por usuário
+- dashboard e auditoria administrativa
+- busca de endereço por CEP
+- SPA React servida pelo mesmo projeto
+
+## Pré-requisitos
+
+- Java 17
+- SQL Server local acessível na porta `1433`
+- PowerShell
+- Windows para uso direto dos scripts `.ps1`
+
+Observação:
+o front-end pode usar o Node local versionado em `.tools/node/...` quando esse diretório existir. Os scripts de `apresentacao/` já cuidam disso, e a API continua subindo mesmo se o build automático da SPA não puder ser executado.
 
 ## Banco de Dados
 
-Configuração principal em:
-
-```text
-src/main/resources/application.properties
-```
-
-Configuração atual de desenvolvimento:
+Configuração atual da API em [src/main/resources/application.properties](src/main/resources/application.properties):
 
 ```properties
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=loanflow;encrypt=false;trustServerCertificate=true
-spring.datasource.username=loanflow_user
-spring.datasource.password=Loanflow@12345
+spring.datasource.url=${LOANFLOW_DB_URL:jdbc:sqlserver://localhost:1433;databaseName=loanflow;encrypt=false;trustServerCertificate=true}
+spring.datasource.username=${LOANFLOW_DB_USERNAME:loanflow_user}
+spring.datasource.password=${LOANFLOW_DB_PASSWORD:}
+loanflow.jwt.secret=${JWT_SECRET:}
 ```
 
-Script inicial do schema:
+Antes de subir a API localmente, defina pelo menos as variáveis sensíveis:
 
-```text
-src/main/resources/db/migration/V1__create_core_schema.sql
+```powershell
+$env:LOANFLOW_DB_PASSWORD="sua-senha-do-sql-server"
+$env:JWT_SECRET="uma-chave-com-pelo-menos-32-bytes-para-hmac"
 ```
 
-Crie o banco e usuário no SQL Server antes de subir a aplicação:
+Criação rápida da base local:
 
 ```sql
 CREATE DATABASE loanflow;
 GO
 
-CREATE LOGIN loanflow_user WITH PASSWORD = 'Loanflow@12345';
+CREATE LOGIN loanflow_user WITH PASSWORD = '<defina-uma-senha-segura>';
 GO
 
 USE loanflow;
@@ -102,150 +139,121 @@ ALTER ROLE db_owner ADD MEMBER loanflow_user;
 GO
 ```
 
-Ao iniciar a aplicação, o Flyway aplica as migrations automaticamente.
+As migrations ficam em [src/main/resources/db/migration](src/main/resources/db/migration) e são aplicadas automaticamente na subida da aplicação.
 
-A base de desenvolvimento também recebe usuários demo pela migration `V5__seed_demo_users.sql`. Consulte `docs/usuarios-demo.md` para a lista de e-mails e a senha padrão `Senha@123`.
+Observação:
+os testes automatizados não dependem de SQL Server. Eles usam H2 em memória via [src/test/resources/application-test.properties](src/test/resources/application-test.properties).
 
-## Como Rodar
+## Como Executar
 
-Compile e rode os testes:
+### 1. Rodar os testes do back-end
 
 ```powershell
 cmd /c mvnw.cmd test
 ```
 
-Suba a aplicação:
+### 2. Rodar só a API
 
 ```powershell
 cmd /c mvnw.cmd spring-boot:run
 ```
 
-Aplicação local:
+API disponível em:
 
 ```text
 http://localhost:8080
 ```
 
-Se a porta estiver ocupada:
+### 3. Rodar front e back separadamente no desenvolvimento
+
+Back-end:
 
 ```powershell
-netstat -ano | findstr :8080
-Stop-Process -Id <PID> -Force
+cmd /c mvnw.cmd spring-boot:run
 ```
 
-## Front-end React
-
-O repositório agora inclui um front-end React em:
-
-```text
-frontend/
-```
-
-Escopo inicial da interface:
-
-- login com JWT
-- dashboard
-- propostas
-- contrato
-- parcelas e pagamentos
-- notificações
-
-Tecnologias do front:
-
-- React 18
-- React Router
-- Vite
-- fetch nativo para consumo da API
-
-Arquivo de configuração do endpoint da API:
-
-```text
-frontend/.env.example
-```
-
-Exemplo:
-
-```properties
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-Para rodar o front localmente:
+Front-end:
 
 ```powershell
-cd frontend
-npm install
-npm run dev
+powershell -ExecutionPolicy Bypass -File .\apresentacao\run-dev.ps1
 ```
 
-Endereço esperado do front em desenvolvimento:
+SPA em desenvolvimento:
 
 ```text
 http://localhost:5173
 ```
 
-## Fluxo Principal
+### 4. Gerar build do front manualmente
 
-1. Cadastrar solicitante.
-2. Cadastrar credor.
-3. Cadastrar administrador.
-4. Fazer login e salvar os tokens JWT.
-5. Solicitante cria proposta.
-6. Solicitante submete proposta.
-7. Credor inicia análise.
-8. Credor aprova proposta.
-9. Credor gera contrato.
-10. Solicitante assina contrato.
-11. Credor assina contrato.
-12. Sistema formaliza contrato e gera parcelas.
-13. Solicitante registra pagamento manual.
-14. Sistema registra auditoria do fluxo.
-
-## Minha Recomendação Objetiva Implementada
-
-Para deixar o protótipo mais completo sem virar um produto financeiro real, foram priorizados estes pontos:
-
-- Atualização de perfil do usuário autenticado.
-- Listagem administrativa de usuários.
-- Identificadores de perfil na resposta de login e cadastro: `solicitanteId`, `credorId` e `administradorId`.
-- Atualização de proposta enquanto ainda está em `RASCUNHO`.
-- Consulta de propostas por status, respeitando permissão do usuário autenticado.
-- Cancelamento de proposta antes da contratação.
-- Cancelamento de contrato antes da formalização.
-- Cancelamento de pagamento manual, com recalculo do valor pago da parcela.
-- Filtros simples para notificações e auditorias.
-- Bloqueio e reativação de usuários pelo administrador.
-- Dashboard administrativo básico.
-- Marcação manual de parcelas vencidas como `EM_ATRASO`.
-- Respostas JSON para erros de autenticação e autorização.
-- CORS preparado para o front-end React local em `http://localhost:5173`.
-
-## O Que Pode Ficar Para Depois
-
-Estes pontos continuam fora do MVP imediato porque aumentam escopo sem serem necessários para demonstrar o TCC:
-
-- Integração bancária, PIX automático ou conciliação real.
-- KYC regulatório, bureau de crédito e antifraude avançado.
-- Assinatura digital ICP-Brasil, certificado A1/A3 ou carimbo do tempo oficial.
-- Recuperação de senha por e-mail real.
-- Upload real de comprovantes em storage.
-- Notificação por e-mail, SMS ou push.
-- Dashboard financeiro detalhado.
-- Tela administrativa completa.
-- Motor de score de crédito real.
-- Regras complexas de multa, juros de mora e renegociação.
-- Testes automatizados de todos os fluxos REST.
-
-O roteiro detalhado para Postman está em:
-
-```text
-docs/roteiro-postman.md
+```powershell
+powershell -ExecutionPolicy Bypass -File .\apresentacao\run-build.ps1
 ```
 
-Também existe um arquivo `.http` para uso com REST Client no VS Code:
+### 5. Testar regras isoladas do front
 
-```text
-docs/loanflow-api.http
+```powershell
+powershell -ExecutionPolicy Bypass -File .\apresentacao\run-test.ps1
 ```
+
+## Integração da SPA com a API
+
+O projeto já possui integração entre o back-end e a SPA:
+
+- ao iniciar a aplicação, `LoanflowApplication` chama um bootstrap que verifica se o build do front precisa ser atualizado
+- quando necessário e possível, o back-end executa `npm run build` dentro de `apresentacao/`
+- os arquivos de `apresentacao/dist` são servidos pela própria aplicação Spring Boot
+- rotas navegáveis da SPA como `/dashboard`, `/minha-conta` e `/contratos` fazem forward para `index.html`
+
+Se o `npm`/Node não estiver disponível, ou se o build automático falhar, a API continua subindo normalmente. Nesse cenário, apenas a SPA embutida pode ficar desatualizada ou indisponível até um build manual.
+
+Para desativar o build automático do front na subida da API:
+
+```powershell
+$env:LOANFLOW_FRONTEND_AUTO_BUILD="false"
+cmd /c mvnw.cmd spring-boot:run
+```
+
+ou:
+
+```powershell
+cmd /c mvnw.cmd "-Dspring-boot.run.jvmArguments=-Dloanflow.frontend.auto-build=false" spring-boot:run
+```
+
+## Configuração do Front-end
+
+Arquivo de exemplo:
+
+[apresentacao/.env.example](apresentacao/.env.example)
+
+Conteúdo:
+
+```properties
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+## Variáveis e Propriedades Úteis
+
+- `LOANFLOW_DB_URL`
+- `LOANFLOW_DB_USERNAME`
+- `LOANFLOW_DB_PASSWORD`
+- `JWT_SECRET`
+- `JWT_EXPIRATION_MINUTES`
+- `CONTRACT_STORAGE_PATH`
+- `LOANFLOW_FRONTEND_AUTO_BUILD`
+
+## Fluxo Principal do Protótipo
+
+1. Usuário se cadastra como solicitante, credor ou administrador.
+2. O solicitante cria uma proposta de crédito.
+3. A proposta é submetida para análise.
+4. Um credor aceita a oportunidade.
+5. O credor inicia a análise e aprova a proposta.
+6. O sistema gera o contrato.
+7. Solicitante e credor assinam eletronicamente por aceite autenticado.
+8. O contrato é formalizado e as parcelas são criadas.
+9. O solicitante registra pagamentos manuais.
+10. O sistema gera notificações e registra auditoria dos eventos.
 
 ## Endpoints Principais
 
@@ -256,12 +264,23 @@ POST /auth/register
 POST /auth/login
 ```
 
+### Endereços
+
+```text
+GET /enderecos/cep/{cep}
+```
+
 ### Usuários
 
 ```text
 GET /usuarios/me
+GET /usuarios/me/conta-bancaria
 PUT /usuarios/me
+PUT /usuarios/me/conta-bancaria
+PUT /usuarios/me/senha
+PUT /usuarios/me/dados-financeiros
 GET /usuarios
+GET /usuarios/credores
 POST /usuarios/{id}/bloquear
 POST /usuarios/{id}/reativar
 ```
@@ -270,13 +289,17 @@ POST /usuarios/{id}/reativar
 
 ```text
 POST /propostas
+GET /propostas
 GET /propostas/minhas
 GET /propostas/analise
-GET /propostas/status/{status}
+GET /propostas/aguardando-aceite
+GET /propostas/aceitas
 GET /propostas/{id}
+GET /propostas/status/{status}
 PUT /propostas/{id}
 POST /propostas/{id}/submeter
 POST /propostas/{id}/iniciar-analise
+POST /propostas/{id}/aceitar
 POST /propostas/{id}/aprovar
 POST /propostas/{id}/rejeitar
 POST /propostas/{id}/cancelar
@@ -286,6 +309,7 @@ POST /propostas/{id}/cancelar
 
 ```text
 POST /contratos/proposta/{propostaId}/gerar
+GET /contratos
 GET /contratos/{id}
 GET /contratos/{id}/download
 POST /contratos/{id}/assinar
@@ -295,30 +319,68 @@ POST /contratos/{id}/cancelar
 ### Parcelas e Pagamentos
 
 ```text
-GET /contratos/{contratoId}/parcelas
+GET /parcelas
 GET /parcelas/{id}
+GET /contratos/{contratoId}/parcelas
 POST /parcelas/{parcelaId}/pagamentos
 GET /parcelas/{parcelaId}/pagamentos
 POST /parcelas/{parcelaId}/pagamentos/{pagamentoId}/cancelar
 POST /admin/parcelas/marcar-atrasadas
 ```
 
-### Notificações e Auditoria
+### Notificações, Auditoria e Admin
 
 ```text
 GET /notificacoes
-GET /notificacoes?lida=false&tipo=CONTRATO
 POST /notificacoes/{id}/lida
 GET /admin/auditorias
-GET /admin/auditorias?acao=ASSINAR&entidadeTipo=Contrato&entidadeId=1
 GET /admin/dashboard
 ```
 
+## Usuários e Massa de Demonstração
+
+Usuários seedados para demonstração estão documentados em:
+
+[documentacao/usuarios-demo.md](documentacao/usuarios-demo.md)
+
+Senha padrão dos usuários de demonstração:
+
+```text
+Senha@123
+```
+
+## Scripts Úteis
+
+Scripts de apoio em [roteiros](roteiros):
+
+- `seed-random-batch.ps1`: cria massa randômica de solicitantes, credores, propostas e contratos
+- `register-partial-payments.ps1`: registra pagamentos parciais com base no lote criado
+
+Artefatos gerados por esses scripts ficam em `artefatos/` e não são versionados.
+
+## Documentação Auxiliar
+
+- [documentacao/roteiro-postman.md](documentacao/roteiro-postman.md)
+- [documentacao/loanflow-api.http](documentacao/loanflow-api.http)
+
+## Limitações do Protótipo
+
+Este repositório não implementa operação financeira real. Estão fora do escopo do MVP:
+
+- PIX automático e conciliação bancária
+- integração com instituições financeiras
+- bureaus de crédito
+- KYC regulatório completo
+- antifraude avançado
+- assinatura ICP-Brasil
+- recuperação de senha por e-mail real
+- notificações por e-mail, SMS ou push
+
 ## Observações para Demonstração
 
-- Use `No Auth` no Postman para `/auth/register` e `/auth/login`.
-- Use `Authorization: Bearer <token>` nos demais endpoints.
-- O pagamento é manual/simulado.
-- O contrato em PDF é gerado localmente.
-- A assinatura é um aceite eletrônico autenticado.
-- A auditoria registra eventos importantes do fluxo.
+- `/auth/register` e `/auth/login` não exigem token
+- os demais endpoints usam `Authorization: Bearer <token>`
+- pagamentos são manuais e simulados
+- o PDF de contrato é gerado localmente
+- a assinatura é representada por aceite eletrônico autenticado
+- eventos relevantes ficam registrados na auditoria

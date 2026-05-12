@@ -1,6 +1,6 @@
-package com.api.loanflow.shared.web;
+package com.api.loanflow.compartilhado.web;
 
-import com.api.loanflow.shared.frontend.FrontendProjectPaths;
+import com.api.loanflow.compartilhado.apresentacao.FrontendProjectPaths;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

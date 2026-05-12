@@ -1,4 +1,4 @@
-package com.api.loanflow.shared.frontend;
+package com.api.loanflow.compartilhado.apresentacao;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,7 +22,7 @@ public final class FrontendProjectPaths {
 	}
 
 	public static Path resolveFrontendDirectory() {
-		return resolveProjectRoot().resolve("frontend");
+		return resolveProjectRoot().resolve("apresentacao");
 	}
 
 	public static Path resolveDistDirectory() {
@@ -34,6 +34,6 @@ public final class FrontendProjectPaths {
 	}
 
 	private static boolean isProjectRoot(Path path) {
-		return Files.exists(path.resolve("pom.xml")) && Files.exists(path.resolve("frontend").resolve("package.json"));
+		return Files.exists(path.resolve("pom.xml")) && Files.exists(path.resolve("apresentacao").resolve("package.json"));
 	}
 }

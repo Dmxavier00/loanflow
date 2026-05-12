@@ -1,4 +1,4 @@
-package com.api.loanflow.shared.frontend;
+package com.api.loanflow.compartilhado.apresentacao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public final class FrontendBuildBootstrap {
@@ -22,25 +23,36 @@ public final class FrontendBuildBootstrap {
 	}
 
 	public static void prepare() {
+		Path frontendDir = FrontendProjectPaths.resolveFrontendDirectory();
+		Path distIndex = FrontendProjectPaths.resolveDistIndex();
+		prepare(frontendDir, distIndex, FrontendBuildBootstrap::runFrontendBuild);
+	}
+
+	static void prepare(Path frontendDir, Path distIndex, Consumer<Path> buildRunner) {
 		if (!isAutoBuildEnabled()) {
 			log.info("Build automático do front-end desativado por propriedade/variável de ambiente.");
 			return;
 		}
 
-		Path frontendDir = FrontendProjectPaths.resolveFrontendDirectory();
-		Path distIndex = FrontendProjectPaths.resolveDistIndex();
+		try {
+			if (!Files.exists(frontendDir.resolve("package.json"))) {
+				log.info("Front-end React não encontrado em {}. Seguiremos apenas com a API.", frontendDir);
+				return;
+			}
 
-		if (!Files.exists(frontendDir.resolve("package.json"))) {
-			log.info("Front-end React não encontrado em {}. Seguiremos apenas com a API.", frontendDir);
-			return;
+			if (!isBuildRequired(frontendDir, distIndex)) {
+				log.info("Front-end já está pronto em {}.", distIndex);
+				return;
+			}
+
+			buildRunner.accept(frontendDir);
+		} catch (RuntimeException exception) {
+			log.warn(
+				"Não foi possível gerar o build do front-end automaticamente. A API continuará disponível sem exigir a SPA embutida. Motivo: {}",
+				exception.getMessage(),
+				exception
+			);
 		}
-
-		if (!isBuildRequired(frontendDir, distIndex)) {
-			log.info("Front-end já está pronto em {}.", distIndex);
-			return;
-		}
-
-		runFrontendBuild(frontendDir);
 	}
 
 	private static boolean isAutoBuildEnabled() {
