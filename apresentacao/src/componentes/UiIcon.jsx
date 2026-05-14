@@ -125,6 +125,14 @@ export default function UiIcon({ name, className = '', size = 20, strokeWidth = 
         </svg>
       );
 
+    case 'ban':
+      return (
+        <svg {...sharedProps}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="m8.5 15.5 7-7" />
+        </svg>
+      );
+
     case 'logout':
       return (
         <svg {...sharedProps}>
@@ -194,6 +202,14 @@ export default function UiIcon({ name, className = '', size = 20, strokeWidth = 
         <svg {...sharedProps}>
           <path d="M5 12h13" />
           <path d="m13 7 5 5-5 5" />
+        </svg>
+      );
+
+    case 'x':
+      return (
+        <svg {...sharedProps}>
+          <path d="m7 7 10 10" />
+          <path d="m17 7-10 10" />
         </svg>
       );
 

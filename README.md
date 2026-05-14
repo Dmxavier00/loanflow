@@ -10,7 +10,7 @@ O projeto foi construído para demonstrar um fluxo funcional de concessão de cr
 - perfis de `SOLICITANTE`, `CREDOR` e `ADMIN`
 - criação, análise e aprovação de propostas
 - geração de contrato em PDF com hash do documento
-- assinatura eletrônica simulada por aceite autenticado
+- assinatura eletrônica simulada em duas etapas, com desafio curto por senha atual ou código temporário
 - geração de parcelas e registro manual de pagamentos
 - notificações e trilha de auditoria
 - dashboard administrativo básico
@@ -84,7 +84,7 @@ infraestrutura/persistencia
 - cadastro e manutenção de conta bancária
 - consulta de credores para composição do fluxo
 - criação, edição, submissão, aceite, análise, aprovação, rejeição e cancelamento de propostas
-- geração, consulta, assinatura, download e cancelamento de contratos
+- geração, consulta, assinatura guiada, download e cancelamento de contratos
 - geração e consulta de parcelas
 - registro e cancelamento de pagamentos manuais
 - notificações por usuário
@@ -109,11 +109,13 @@ Configuração atual da API em [src/main/resources/application.properties](src/m
 ```properties
 spring.datasource.url=${LOANFLOW_DB_URL:jdbc:sqlserver://localhost:1433;databaseName=loanflow;encrypt=false;trustServerCertificate=true}
 spring.datasource.username=${LOANFLOW_DB_USERNAME:loanflow_user}
-spring.datasource.password=${LOANFLOW_DB_PASSWORD:}
-loanflow.jwt.secret=${JWT_SECRET:}
+spring.datasource.password=${LOANFLOW_DB_PASSWORD:Loanflow@12345}
+loanflow.jwt.secret=${JWT_SECRET:loanflow-demo-secret-change-me-loanflow-demo-secret-change-me}
 ```
 
-Antes de subir a API localmente, defina pelo menos as variáveis sensíveis:
+Os valores acima ja trazem defaults locais compativeis com os scripts de demo. Com isso, o `Run Java` da IDE sobe a API sem exigir comando auxiliar.
+
+Se quiser usar outra senha de banco ou outra secret JWT, sobrescreva pelas variaveis abaixo:
 
 ```powershell
 $env:LOANFLOW_DB_PASSWORD="sua-senha-do-sql-server"
@@ -126,7 +128,7 @@ Criação rápida da base local:
 CREATE DATABASE loanflow;
 GO
 
-CREATE LOGIN loanflow_user WITH PASSWORD = '<defina-uma-senha-segura>';
+CREATE LOGIN loanflow_user WITH PASSWORD = 'Loanflow@12345';
 GO
 
 USE loanflow;
@@ -138,6 +140,8 @@ GO
 ALTER ROLE db_owner ADD MEMBER loanflow_user;
 GO
 ```
+
+Se preferir outra senha no SQL Server, tudo bem. Nesse caso, defina `LOANFLOW_DB_PASSWORD` antes de subir a API ou ajuste a propriedade equivalente.
 
 As migrations ficam em [src/main/resources/db/migration](src/main/resources/db/migration) e são aplicadas automaticamente na subida da aplicação.
 
@@ -162,6 +166,34 @@ API disponível em:
 
 ```text
 http://localhost:8080
+```
+
+### 2.1 Rodar a demo do TCC com um comando
+
+Para a apresentacao, prefira usar o script da raiz do projeto:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-demo.ps1
+```
+
+O script:
+
+- abre uma nova janela so para a API, preservando a janela atual para voce
+- aguarda a SPA responder e abre o navegador na rota `/login`
+- usa o [run-demo.ps1](run-demo.ps1) por baixo para aplicar valores de demonstracao de banco e `JWT_SECRET`
+- aceita sobrescrita por parametro, por exemplo `-DbPassword "sua-senha"` ou `-Port 8081`
+- oferece `-DryRun` para conferir a configuracao sem iniciar a API
+
+Se preferir subir tudo na mesma janela do terminal, ainda pode usar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-demo.ps1
+```
+
+Para encerrar a demo e liberar a porta antes de uma nova tentativa:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\stop-demo.ps1
 ```
 
 ### 3. Rodar front e back separadamente no desenvolvimento
@@ -240,6 +272,9 @@ VITE_API_BASE_URL=http://localhost:8080
 - `JWT_SECRET`
 - `JWT_EXPIRATION_MINUTES`
 - `CONTRACT_STORAGE_PATH`
+- `SIGNATURE_CHALLENGE_TTL_MINUTES`
+- `SIGNATURE_TERM_VERSION`
+- `SIGNATURE_CHALLENGE_LENGTH`
 - `LOANFLOW_FRONTEND_AUTO_BUILD`
 
 ## Fluxo Principal do Protótipo
@@ -250,7 +285,7 @@ VITE_API_BASE_URL=http://localhost:8080
 4. Um credor aceita a oportunidade.
 5. O credor inicia a análise e aprova a proposta.
 6. O sistema gera o contrato.
-7. Solicitante e credor assinam eletronicamente por aceite autenticado.
+7. Solicitante e credor iniciam um desafio curto e confirmam a assinatura com senha atual ou código temporário.
 8. O contrato é formalizado e as parcelas são criadas.
 9. O solicitante registra pagamentos manuais.
 10. O sistema gera notificações e registra auditoria dos eventos.
@@ -312,6 +347,7 @@ POST /contratos/proposta/{propostaId}/gerar
 GET /contratos
 GET /contratos/{id}
 GET /contratos/{id}/download
+POST /contratos/{id}/assinatura/desafio
 POST /contratos/{id}/assinar
 POST /contratos/{id}/cancelar
 ```
@@ -362,6 +398,7 @@ Artefatos gerados por esses scripts ficam em `artefatos/` e não são versionado
 
 - [documentacao/roteiro-postman.md](documentacao/roteiro-postman.md)
 - [documentacao/loanflow-api.http](documentacao/loanflow-api.http)
+- [documentacao/checklist-smoke-fase1-assinatura.md](documentacao/checklist-smoke-fase1-assinatura.md)
 
 ## Limitações do Protótipo
 
@@ -382,5 +419,7 @@ Este repositório não implementa operação financeira real. Estão fora do esc
 - os demais endpoints usam `Authorization: Bearer <token>`
 - pagamentos são manuais e simulados
 - o PDF de contrato é gerado localmente
-- a assinatura é representada por aceite eletrônico autenticado
+- a assinatura é representada por um fluxo guiado com desafio curto, reautenticação e trilha de eventos
+- o contrato expira automaticamente quando o prazo de assinatura acaba
+- desafios de assinatura podem expirar, ser consumidos ou ser cancelados internamente para reforçar a rastreabilidade
 - eventos relevantes ficam registrados na auditoria

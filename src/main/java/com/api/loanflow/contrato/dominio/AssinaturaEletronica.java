@@ -17,11 +17,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-/**
- * Evidencia eletronica de uma assinatura vinculada a um contrato e a um signatario.
- * Armazena metadados suficientes para trilha de auditoria e validacao do aceite.
- */
 @Entity
 @Table(
 	name = "assinaturas_eletronicas",
@@ -40,51 +37,63 @@ public class AssinaturaEletronica {
 	@JoinColumn(name = "usuario_id", nullable = false)
 	private Usuario usuario;
 
-	/**
-	 * Papel desempenhado pelo usuario no fluxo de assinatura do contrato.
-	 */
 	@Enumerated(EnumType.STRING)
 	@Column(name = "papel_signatario", nullable = false, length = 30)
 	private Role papelSignatario;
 
-	/**
-	 * Tipo de aceite capturado para compor a prova da assinatura.
-	 */
 	@Enumerated(EnumType.STRING)
 	@Column(name = "tipo_aceite", nullable = false, length = 50)
 	private TipoAceite tipoAceite = TipoAceite.ACEITE_WEB_AUTENTICADO;
 
-	/**
-	 * Hash calculado sobre os dados da assinatura para detectar adulteracoes.
-	 */
 	@Column(name = "hash_assinatura", nullable = false, length = 128)
 	private String hashAssinatura;
 
-	/**
-	 * Endereco IP observado no momento do aceite.
-	 */
+	@Column(name = "hash_conteudo_aceito", length = 128)
+	private String hashConteudoAceito;
+
+	@Column(name = "versao_termo_aceite", length = 40)
+	private String versaoTermoAceite;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "metodo_autenticacao", length = 40)
+	private MetodoAutenticacaoAssinatura metodoAutenticacao;
+
+	@Column(name = "desafio_autenticacao_id")
+	private UUID desafioAutenticacaoId;
+
+	@Column(name = "assinatura_documento_valida")
+	private Boolean assinaturaDocumentoValida;
+
 	@Column(name = "ip_origem", length = 80)
 	private String ipOrigem;
 
-	/**
-	 * User-Agent enviado pelo cliente para auditoria e rastreabilidade.
-	 */
 	@Column(name = "user_agent", length = 500)
 	private String userAgent;
 
 	@Column(name = "registro_temporal", nullable = false)
 	private LocalDateTime registroTemporal;
 
-	/**
-	 * Permite invalidar uma evidencia sem apagar o historico persistido.
-	 */
 	@Column(nullable = false)
 	private boolean valida = true;
 
 	@PrePersist
 	void prePersist() {
-		// Registra o instante exato da criacao da evidencia de assinatura.
-		registroTemporal = LocalDateTime.now();
+		if (registroTemporal == null) {
+			registroTemporal = LocalDateTime.now();
+		}
+	}
+
+	public void preencherMetadadosAceite(
+		Contrato contrato,
+		DesafioAssinatura desafio,
+		String versaoTermoAceite,
+		boolean documentoIntegro
+	) {
+		hashConteudoAceito = contrato.getHashDocumento();
+		this.versaoTermoAceite = versaoTermoAceite;
+		metodoAutenticacao = desafio.getMetodoAutenticacao();
+		desafioAutenticacaoId = desafio.getId();
+		assinaturaDocumentoValida = documentoIntegro;
 	}
 
 	public Long getId() {
@@ -129,6 +138,46 @@ public class AssinaturaEletronica {
 
 	public void setHashAssinatura(String hashAssinatura) {
 		this.hashAssinatura = hashAssinatura;
+	}
+
+	public String getHashConteudoAceito() {
+		return hashConteudoAceito;
+	}
+
+	public void setHashConteudoAceito(String hashConteudoAceito) {
+		this.hashConteudoAceito = hashConteudoAceito;
+	}
+
+	public String getVersaoTermoAceite() {
+		return versaoTermoAceite;
+	}
+
+	public void setVersaoTermoAceite(String versaoTermoAceite) {
+		this.versaoTermoAceite = versaoTermoAceite;
+	}
+
+	public MetodoAutenticacaoAssinatura getMetodoAutenticacao() {
+		return metodoAutenticacao;
+	}
+
+	public void setMetodoAutenticacao(MetodoAutenticacaoAssinatura metodoAutenticacao) {
+		this.metodoAutenticacao = metodoAutenticacao;
+	}
+
+	public UUID getDesafioAutenticacaoId() {
+		return desafioAutenticacaoId;
+	}
+
+	public void setDesafioAutenticacaoId(UUID desafioAutenticacaoId) {
+		this.desafioAutenticacaoId = desafioAutenticacaoId;
+	}
+
+	public Boolean getAssinaturaDocumentoValida() {
+		return assinaturaDocumentoValida;
+	}
+
+	public void setAssinaturaDocumentoValida(Boolean assinaturaDocumentoValida) {
+		this.assinaturaDocumentoValida = assinaturaDocumentoValida;
 	}
 
 	public String getIpOrigem() {

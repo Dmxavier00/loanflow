@@ -3,6 +3,8 @@ package com.api.loanflow.seguranca;
 import com.api.loanflow.usuario.dominio.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,9 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+	private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+	private static final String LOCAL_DEMO_SECRET = "loanflow-demo-secret-change-me-loanflow-demo-secret-change-me";
+
 	private final SecretKey signingKey;
 	private final long expirationSeconds;
 
@@ -21,12 +26,19 @@ public class JwtService {
 		@Value("${loanflow.jwt.expiration-minutes}") long expirationMinutes
 	) {
 		if (secret == null || secret.isBlank()) {
-			throw new IllegalStateException("JWT secret nao configurado. Defina loanflow.jwt.secret ou JWT_SECRET.");
+			throw new IllegalStateException(
+				"JWT secret nao configurado. Defina loanflow.jwt.secret ou JWT_SECRET com pelo menos 32 bytes. "
+					+ "Para a demo local, use start-demo.ps1 ou run-demo.ps1."
+			);
 		}
 
 		byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
 		if (secretBytes.length < 32) {
 			throw new IllegalStateException("JWT secret deve conter ao menos 32 bytes.");
+		}
+
+		if (LOCAL_DEMO_SECRET.equals(secret)) {
+			log.warn("Usando JWT secret padrao de demonstracao. Sobrescreva JWT_SECRET ou loanflow.jwt.secret fora do ambiente local.");
 		}
 
 		this.signingKey = Keys.hmacShaKeyFor(secretBytes);

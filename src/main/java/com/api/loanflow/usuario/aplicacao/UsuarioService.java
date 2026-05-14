@@ -92,6 +92,13 @@ public class UsuarioService {
 	}
 
 	@Transactional(readOnly = true)
+	public void validarSenhaAtual(Usuario usuario, String senha) {
+		if (senha == null || senha.isBlank() || !passwordEncoder.matches(senha, usuario.getSenhaHash())) {
+			throw new RegraNegocioException("Senha atual invalida para confirmar a assinatura.");
+		}
+	}
+
+	@Transactional(readOnly = true)
 	public ContaBancariaResponse minhaContaBancaria() {
 		var usuario = usuarioAtual();
 		var contaBancaria = contaBancariaRepository.findByUsuarioId(usuario.getId())

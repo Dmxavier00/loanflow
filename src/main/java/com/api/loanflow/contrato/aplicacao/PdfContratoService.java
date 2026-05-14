@@ -1,5 +1,6 @@
 package com.api.loanflow.contrato.aplicacao;
 
+import com.api.loanflow.compartilhado.excecao.RecursoNaoEncontradoException;
 import com.api.loanflow.compartilhado.excecao.RegraNegocioException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,14 +24,14 @@ public class PdfContratoService {
 	private final Path storagePath;
 
 	public PdfContratoService(@Value("${loanflow.contract.storage-path}") String storagePath) {
-		this.storagePath = Path.of(storagePath);
+		this.storagePath = Path.of(storagePath).toAbsolutePath().normalize();
 	}
 
 	public String gerarContratoPdf(String numeroContrato, String conteudo) {
 		try {
 			Files.createDirectories(storagePath);
 			var fileName = numeroContrato.replaceAll("[^a-zA-Z0-9._-]", "_") + ".pdf";
-			var destino = storagePath.resolve(fileName);
+			var destino = storagePath.resolve(fileName).normalize();
 			Files.write(destino, criarPdfEstruturado(numeroContrato, conteudo));
 			return destino.toString();
 		} catch (IOException exception) {
@@ -40,10 +41,47 @@ public class PdfContratoService {
 
 	public byte[] lerPdf(String pdfPath) {
 		try {
-			return Files.readAllBytes(Path.of(pdfPath));
+			var resolvedPdfPath = resolvePdfPath(pdfPath);
+			if (!Files.isRegularFile(resolvedPdfPath)) {
+				throw new RecursoNaoEncontradoException("PDF do contrato não encontrado.");
+			}
+			return Files.readAllBytes(resolvedPdfPath);
+		} catch (RecursoNaoEncontradoException exception) {
+			throw exception;
 		} catch (IOException exception) {
 			throw new RegraNegocioException("Não foi possível ler o PDF do contrato.");
 		}
+	}
+
+	private Path resolvePdfPath(String pdfPath) {
+		var storedPath = Path.of(pdfPath).normalize();
+		var fileName = storedPath.getFileName();
+
+		if (storedPath.isAbsolute() && Files.isRegularFile(storedPath)) {
+			return storedPath;
+		}
+
+		if (!storedPath.isAbsolute()) {
+			var directPath = storedPath.toAbsolutePath().normalize();
+			if (Files.isRegularFile(directPath)) {
+				return directPath;
+			}
+
+			var nestedStoragePath = storagePath.resolve(storedPath).normalize();
+			if (Files.isRegularFile(nestedStoragePath)) {
+				return nestedStoragePath;
+			}
+		}
+
+		if (fileName != null) {
+			var storageFilePath = storagePath.resolve(fileName).normalize();
+			if (Files.isRegularFile(storageFilePath)) {
+				return storageFilePath;
+			}
+			return storageFilePath;
+		}
+
+		return storedPath.isAbsolute() ? storedPath : storagePath.resolve(storedPath).normalize();
 	}
 
 	private byte[] criarPdfEstruturado(String numeroContrato, String conteudo) throws IOException {

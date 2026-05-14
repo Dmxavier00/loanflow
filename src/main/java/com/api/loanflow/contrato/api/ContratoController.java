@@ -3,6 +3,8 @@ package com.api.loanflow.contrato.api;
 import com.api.loanflow.contrato.api.dto.AssinarContratoRequest;
 import com.api.loanflow.contrato.api.dto.AssinaturaResponse;
 import com.api.loanflow.contrato.api.dto.ContratoResponse;
+import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaRequest;
+import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaResponse;
 import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,7 +72,18 @@ public class ContratoController {
 		@RequestHeader(value = "User-Agent", required = false) String userAgent,
 		HttpServletRequest servletRequest
 	) {
-		return contratoService.assinar(id, servletRequest.getRemoteAddr(), userAgent);
+		return contratoService.assinar(id, request.desafioId(), request.codigo(), servletRequest.getRemoteAddr(), userAgent);
+	}
+
+	@PostMapping("/{id}/assinatura/desafio")
+	@PreAuthorize("hasAnyRole('SOLICITANTE','CREDOR')")
+	public IniciarDesafioAssinaturaResponse iniciarDesafioAssinatura(
+		@PathVariable Long id,
+		@Valid @RequestBody IniciarDesafioAssinaturaRequest request,
+		@RequestHeader(value = "User-Agent", required = false) String userAgent,
+		HttpServletRequest servletRequest
+	) {
+		return contratoService.iniciarDesafioAssinatura(id, request.metodo(), servletRequest.getRemoteAddr(), userAgent);
 	}
 
 	@PostMapping("/{id}/cancelar")

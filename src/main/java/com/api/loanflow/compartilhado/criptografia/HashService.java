@@ -9,12 +9,16 @@ import java.security.NoSuchAlgorithmException;
 @Service
 public class HashService {
 	public String sha256(String value) {
+		return sha256(value.getBytes(StandardCharsets.UTF_8));
+	}
+
+	public String sha256(byte[] value) {
 		try {
 			var digest = MessageDigest.getInstance("SHA-256");
-			var hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+			var hash = digest.digest(value);
 			return toHex(hash);
 		} catch (NoSuchAlgorithmException exception) {
-			throw new IllegalStateException("Algoritmo SHA-256 indisponível.", exception);
+			throw new IllegalStateException("Algoritmo SHA-256 indisponivel.", exception);
 		}
 	}
 

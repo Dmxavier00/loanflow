@@ -4,6 +4,7 @@ import com.api.loanflow.contrato.dominio.AssinaturaEletronica;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AssinaturaEletronicaRepository extends JpaRepository<AssinaturaEletronica, Long> {
 	boolean existsByContratoIdAndUsuarioId(Long contratoId, Long usuarioId);
@@ -11,4 +12,6 @@ public interface AssinaturaEletronicaRepository extends JpaRepository<Assinatura
 	long countByContratoIdAndValidaTrue(Long contratoId);
 
 	List<AssinaturaEletronica> findByContratoIdOrderByRegistroTemporalAsc(Long contratoId);
+
+	Optional<AssinaturaEletronica> findByContratoIdAndUsuarioId(Long contratoId, Long usuarioId);
 }

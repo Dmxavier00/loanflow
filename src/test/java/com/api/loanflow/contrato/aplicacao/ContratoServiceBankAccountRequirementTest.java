@@ -1,8 +1,11 @@
 package com.api.loanflow.contrato.aplicacao;
 
 import com.api.loanflow.auditoria.aplicacao.AuditoriaService;
+import com.api.loanflow.compartilhado.criptografia.HashService;
+import com.api.loanflow.compartilhado.excecao.RegraNegocioException;
 import com.api.loanflow.contrato.dominio.Contrato;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
+import com.api.loanflow.contrato.dominio.MetodoAutenticacaoAssinatura;
 import com.api.loanflow.contrato.infraestrutura.persistencia.AssinaturaEletronicaRepository;
 import com.api.loanflow.contrato.infraestrutura.persistencia.ContratoRepository;
 import com.api.loanflow.notificacao.aplicacao.NotificacaoService;
@@ -12,8 +15,6 @@ import com.api.loanflow.proposta.aplicacao.PropostaService;
 import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import com.api.loanflow.proposta.dominio.Proposta;
 import com.api.loanflow.proposta.dominio.PropostaStatus;
-import com.api.loanflow.compartilhado.criptografia.HashService;
-import com.api.loanflow.compartilhado.excecao.RegraNegocioException;
 import com.api.loanflow.usuario.aplicacao.UsuarioService;
 import com.api.loanflow.usuario.dominio.Credor;
 import com.api.loanflow.usuario.dominio.Role;
@@ -30,8 +31,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,6 +68,12 @@ class ContratoServiceBankAccountRequirementTest {
 	private NotificacaoService notificacaoService;
 	@Mock
 	private PoliticaCreditoService politicaCreditoService;
+	@Mock
+	private AssinaturaDesafioService assinaturaDesafioService;
+	@Mock
+	private EventoAssinaturaService eventoAssinaturaService;
+	@Mock
+	private ContratoExpiracaoService contratoExpiracaoService;
 
 	private ContratoService contratoService;
 
@@ -82,7 +89,11 @@ class ContratoServiceBankAccountRequirementTest {
 			parcelaService,
 			auditoriaService,
 			notificacaoService,
-			politicaCreditoService
+			politicaCreditoService,
+			assinaturaDesafioService,
+			eventoAssinaturaService,
+			contratoExpiracaoService,
+			"test-v1"
 		);
 	}
 
@@ -94,7 +105,7 @@ class ContratoServiceBankAccountRequirementTest {
 		when(usuarioService.usuarioAtual()).thenReturn(credorUsuario);
 		when(propostaService.buscarComPermissao(100L)).thenReturn(proposta);
 		when(contratoRepository.findByPropostaId(100L)).thenReturn(Optional.empty());
-		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."))
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
 			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
 
 		assertThrows(RegraNegocioException.class, () -> contratoService.gerar(100L, "127.0.0.1"));
@@ -112,7 +123,9 @@ class ContratoServiceBankAccountRequirementTest {
 		when(propostaService.buscarComPermissao(101L)).thenReturn(proposta);
 		when(contratoRepository.findByPropostaId(101L)).thenReturn(Optional.empty());
 		when(hashService.sha256(any(String.class))).thenReturn("hash");
+		when(hashService.sha256(any(byte[].class))).thenReturn("hash-pdf");
 		when(pdfContratoService.gerarContratoPdf(any(String.class), any(String.class))).thenReturn("contrato.pdf");
+		when(pdfContratoService.lerPdf("contrato.pdf")).thenReturn("pdf".getBytes());
 		when(contratoRepository.save(any(Contrato.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		contratoService.gerar(101L, "127.0.0.1");
@@ -131,12 +144,42 @@ class ContratoServiceBankAccountRequirementTest {
 		var contrato = contrato(202L, proposta, ContratoStatus.AGUARDANDO_ASSINATURAS);
 		when(usuarioService.usuarioAtual()).thenReturn(solicitanteUsuario);
 		when(contratoRepository.findById(202L)).thenReturn(Optional.of(contrato));
-		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."))
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
 			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
 
-		assertThrows(RegraNegocioException.class, () -> contratoService.assinar(202L, "127.0.0.1", "JUnit"));
+		assertThrows(
+			RegraNegocioException.class,
+			() -> contratoService.assinar(202L, UUID.randomUUID(), "Senha123!", "127.0.0.1", "JUnit")
+		);
 
 		verify(usuarioService, never()).exigirContaBancaria(eq(credorUsuario), contains("Credor precisa"));
+		verify(assinaturaDesafioService, never()).validarDesafio(any(), any(), any(), any(), any(), any());
+		verify(assinaturaRepository, never()).save(any());
+	}
+
+	@Test
+	void iniciarDesafioDeveExigirContaBancariaDosParticipantes() {
+		var credorUsuario = usuario(16L, Role.CREDOR);
+		var solicitanteUsuario = usuario(26L, Role.SOLICITANTE);
+		var proposta = proposta(106L, solicitanteUsuario, credorUsuario, PropostaStatus.APROVADA);
+		var contrato = contrato(206L, proposta, ContratoStatus.AGUARDANDO_ASSINATURAS);
+		when(usuarioService.usuarioAtual()).thenReturn(solicitanteUsuario);
+		when(contratoRepository.findById(206L)).thenReturn(Optional.of(contrato));
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
+			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
+
+		assertThrows(
+			RegraNegocioException.class,
+			() -> contratoService.iniciarDesafioAssinatura(
+				206L,
+				MetodoAutenticacaoAssinatura.REAUTENTICACAO_SENHA,
+				"127.0.0.1",
+				"JUnit"
+			)
+		);
+
+		verify(usuarioService, never()).exigirContaBancaria(eq(credorUsuario), contains("Credor precisa"));
+		verify(assinaturaDesafioService, never()).iniciarDesafio(any(), any(), any(), any(), any());
 		verify(assinaturaRepository, never()).save(any());
 	}
 
@@ -149,7 +192,9 @@ class ContratoServiceBankAccountRequirementTest {
 		when(propostaService.buscarComPermissao(103L)).thenReturn(proposta);
 		when(contratoRepository.findByPropostaId(103L)).thenReturn(Optional.empty());
 		when(hashService.sha256(any(String.class))).thenReturn("hash");
+		when(hashService.sha256(any(byte[].class))).thenReturn("hash-pdf");
 		when(pdfContratoService.gerarContratoPdf(any(String.class), any(String.class))).thenReturn("contrato.pdf");
+		when(pdfContratoService.lerPdf("contrato.pdf")).thenReturn("pdf".getBytes());
 		when(contratoRepository.save(any(Contrato.class))).thenAnswer(invocation -> {
 			var contrato = invocation.getArgument(0, Contrato.class);
 			ReflectionTestUtils.setField(contrato, "id", 903L);
@@ -177,18 +222,21 @@ class ContratoServiceBankAccountRequirementTest {
 		when(propostaService.buscarComPermissao(104L)).thenReturn(proposta);
 		when(contratoRepository.findByPropostaId(104L)).thenReturn(Optional.empty());
 		when(hashService.sha256(any(String.class))).thenReturn("hash");
+		when(hashService.sha256(any(byte[].class))).thenReturn("hash-pdf");
 		var conteudoCaptor = ArgumentCaptor.forClass(String.class);
 		when(pdfContratoService.gerarContratoPdf(any(String.class), conteudoCaptor.capture())).thenReturn("contrato.pdf");
+		when(pdfContratoService.lerPdf("contrato.pdf")).thenReturn("pdf".getBytes());
 		when(contratoRepository.save(any(Contrato.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		contratoService.gerar(104L, "127.0.0.1");
 
 		var conteudo = conteudoCaptor.getValue();
 		assertTrue(conteudo.contains("# 1. Resumo executivo"));
-		assertTrue(conteudo.contains("# 2. Identificação das partes"));
-		assertTrue(conteudo.contains("# 7. Integridade, auditoria e limitações do protótipo"));
+		assertTrue(conteudo.contains("# 2. Identificacao das partes"));
+		assertTrue(conteudo.contains("# 7. Integridade, auditoria e limitacoes do prototipo"));
 		assertTrue(conteudo.contains("CPF: 123.456.789-01"));
 		assertTrue(conteudo.contains("Solicitante: ______________________________________________"));
+		assertTrue(conteudo.contains("A confirmacao do aceite exige reautenticacao curta do usuario antes do registro final."));
 	}
 
 	@Test
@@ -245,11 +293,12 @@ class ContratoServiceBankAccountRequirementTest {
 		ReflectionTestUtils.setField(contrato, "id", id);
 		contrato.setProposta(proposta);
 		contrato.setStatus(status);
-		contrato.setNumeroContrato("LF-" + id);
+		contrato.setNumeroContrato("LF-%d-TESTE".formatted(id));
+		contrato.setConteudoSnapshot("Contrato de teste");
 		contrato.setHashDocumento("hash-documento");
-		contrato.setConteudoSnapshot("conteudo");
 		contrato.setPdfPath("contrato.pdf");
-		contrato.setDataExpiracaoAssinatura(LocalDateTime.now().plusDays(3));
+		contrato.setHashPdfEmitido("hash-pdf");
+		contrato.setDataExpiracaoAssinatura(LocalDate.now().plusDays(7).atStartOfDay());
 		return contrato;
 	}
 }

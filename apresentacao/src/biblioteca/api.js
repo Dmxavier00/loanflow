@@ -111,8 +111,10 @@ export const api = {
     request(`/contratos/proposta/${proposalId}/gerar`, { method: 'POST', token }),
   searchContracts: (token, params) => request(`/contratos${buildQuery(params)}`, { token }),
   getContract: (token, contractId) => request(`/contratos/${contractId}`, { token }),
-  signContract: (token, contractId) =>
-    request(`/contratos/${contractId}/assinar`, { method: 'POST', token, body: { aceite: true } }),
+  startContractSignatureChallenge: (token, contractId, payload) =>
+    request(`/contratos/${contractId}/assinatura/desafio`, { method: 'POST', token, body: payload }),
+  signContract: (token, contractId, payload) =>
+    request(`/contratos/${contractId}/assinar`, { method: 'POST', token, body: payload }),
   cancelContract: (token, contractId) => request(`/contratos/${contractId}/cancelar`, { method: 'POST', token }),
   downloadContract: (token, contractId) =>
     request(`/contratos/${contractId}/download`, { token, responseType: 'blob' }),

@@ -15,6 +15,9 @@ usuarioId =
 credorId = 1
 propostaId =
 contratoId =
+desafioIdSolicitante =
+desafioIdCredor =
+codigoTemporarioCredor =
 parcelaId =
 pagamentoId =
 notificacaoId =
@@ -314,7 +317,32 @@ Authorization: Bearer {{tokenSolicitante}}
 
 Resultado esperado: download de um PDF simples do contrato.
 
-## 13. Solicitante Assina Contrato
+## 13. Solicitante Inicia Desafio por Senha
+
+```http
+POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
+Authorization: Bearer {{tokenSolicitante}}
+```
+
+Body:
+
+```json
+{
+  "metodo": "REAUTENTICACAO_SENHA"
+}
+```
+
+Salvar `desafioId` em `desafioIdSolicitante`.
+
+Resultado esperado:
+
+```text
+metodo = REAUTENTICACAO_SENHA
+expiraEm preenchido
+mensagem orientando a confirmacao final
+```
+
+## 13.1. Solicitante Confirma Assinatura com Senha Atual
 
 ```http
 POST {{baseUrl}}/contratos/{{contratoId}}/assinar
@@ -325,13 +353,57 @@ Body:
 
 ```json
 {
-  "aceite": true
+  "aceite": true,
+  "desafioId": "{{desafioIdSolicitante}}",
+  "codigo": "Senha@123"
 }
 ```
 
 Resultado esperado: assinatura registrada.
 
-## 14. Credor Assina Contrato
+## 14. Credor Inicia Desafio por Código Temporário
+
+```http
+POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
+Authorization: Bearer {{tokenCredor}}
+```
+
+Body:
+
+```json
+{
+  "metodo": "CODIGO_ONE_TIME"
+}
+```
+
+Salvar `desafioId` em `desafioIdCredor`.
+
+Resultado esperado:
+
+```text
+metodo = CODIGO_ONE_TIME
+expiraEm preenchido
+mascaraDestino preenchida
+mensagem orientando consulta a notificacao
+```
+
+## 14.1. Credor Consulta Notificação com o Código
+
+```http
+GET {{baseUrl}}/notificacoes?lida=false&tipo=SISTEMA
+Authorization: Bearer {{tokenCredor}}
+```
+
+Resultado esperado:
+
+```text
+mensagem contendo "Codigo temporario para assinatura do contrato"
+codigo numerico temporario visivel na notificacao
+```
+
+Copie o código retornado e salve manualmente em `codigoTemporarioCredor`.
+
+## 14.2. Credor Confirma Assinatura com o Código
 
 ```http
 POST {{baseUrl}}/contratos/{{contratoId}}/assinar
@@ -342,7 +414,9 @@ Body:
 
 ```json
 {
-  "aceite": true
+  "aceite": true,
+  "desafioId": "{{desafioIdCredor}}",
+  "codigo": "{{codigoTemporarioCredor}}"
 }
 ```
 
@@ -542,6 +616,27 @@ Authorization: Bearer {{tokenAdmin}}
 ```
 
 ## Problemas Comuns
+
+### 400/422 ao assinar contrato
+
+Confira se o fluxo foi executado em duas etapas:
+
+```text
+1. POST /contratos/{id}/assinatura/desafio
+2. POST /contratos/{id}/assinar com desafioId e codigo
+```
+
+Sem `desafioId`, sem `codigo` ou sem `aceite=true`, a confirmação final falha.
+
+### 400 com desafio expirado
+
+Se o backend responder que o desafio expirou, gere outro:
+
+```text
+POST /contratos/{id}/assinatura/desafio
+```
+
+Depois repita a confirmação final com o novo `desafioId`.
 
 ### 403 em /auth/register
 

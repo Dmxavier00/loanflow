@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,12 +88,15 @@ class FluxoPrincipalIntegrationTest {
 			.getContentAsString();
 
 		var contratoId = readJson(contratoResponse).get("id").asLong();
+		var desafioSolicitanteId = iniciarDesafioAssinatura(contratoId, solicitante.token());
 
 		postJson("/contratos/%d/assinar".formatted(contratoId), solicitante.token(), """
 			{
-			  "aceite": true
+			  "aceite": true,
+			  "desafioId": "%s",
+			  "codigo": "Senha123!"
 			}
-			""")
+			""".formatted(desafioSolicitanteId))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.papelSignatario").value("SOLICITANTE"));
 
@@ -101,11 +105,15 @@ class FluxoPrincipalIntegrationTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("ASSINADO_PARCIALMENTE"));
 
+		var desafioCredorId = iniciarDesafioAssinatura(contratoId, credor.token());
+
 		postJson("/contratos/%d/assinar".formatted(contratoId), credor.token(), """
 			{
-			  "aceite": true
+			  "aceite": true,
+			  "desafioId": "%s",
+			  "codigo": "Senha123!"
 			}
-			""")
+			""".formatted(desafioCredorId))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.papelSignatario").value("CREDOR"));
 
@@ -172,6 +180,20 @@ class FluxoPrincipalIntegrationTest {
 		var proposta = propostaRepository.findById(propostaId).orElseThrow();
 		assertEquals(PropostaStatus.AGUARDANDO_ACEITE, proposta.getStatus());
 		assertTrue(contratoRepository.findByPropostaId(propostaId).isEmpty());
+	}
+
+	private UUID iniciarDesafioAssinatura(Long contratoId, String token) throws Exception {
+		var response = postJson("/contratos/%d/assinatura/desafio".formatted(contratoId), token, """
+			{
+			  "metodo": "REAUTENTICACAO_SENHA"
+			}
+			""")
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		return UUID.fromString(readJson(response).get("desafioId").asText());
 	}
 
 	private Session registrarSolicitante(String prefixo, BigDecimal rendaMensal) throws Exception {

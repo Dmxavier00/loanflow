@@ -17,10 +17,6 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Snapshot persistido do contrato gerado a partir de uma proposta aprovada.
- * Mantem dados de integridade, arquivo emitido e marcos do processo de assinatura.
- */
 @Entity
 @Table(name = "contratos")
 public class Contrato {
@@ -35,16 +31,10 @@ public class Contrato {
 	@Column(name = "numero_contrato", nullable = false, unique = true, length = 40)
 	private String numeroContrato;
 
-	/**
-	 * Status atual do processo de assinatura e formalizacao.
-	 */
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 40)
 	private ContratoStatus status = ContratoStatus.GERADO;
 
-	/**
-	 * Conteudo textual congelado no momento da geracao para evitar divergencia futura.
-	 */
 	@Lob
 	@Column(name = "conteudo_snapshot", nullable = false)
 	private String conteudoSnapshot;
@@ -52,31 +42,55 @@ public class Contrato {
 	@Column(name = "pdf_path", length = 500)
 	private String pdfPath;
 
-	/**
-	 * Hash do documento emitido, usado para auditoria e verificacao de integridade.
-	 */
 	@Column(name = "hash_documento", nullable = false, length = 128)
 	private String hashDocumento;
+
+	@Column(name = "hash_pdf_emitido", length = 128)
+	private String hashPdfEmitido;
 
 	@Column(name = "data_geracao", nullable = false)
 	private LocalDateTime dataGeracao;
 
-	/**
-	 * Limite ate quando o contrato pode receber assinaturas.
-	 */
 	@Column(name = "data_expiracao_assinatura")
 	private LocalDateTime dataExpiracaoAssinatura;
 
-	/**
-	 * Momento em que o contrato passa a ser considerado formalizado.
-	 */
 	@Column(name = "data_formalizacao")
 	private LocalDateTime dataFormalizacao;
 
+	@Column(name = "data_ultima_verificacao_assinatura")
+	private LocalDateTime dataUltimaVerificacaoAssinatura;
+
+	@Column(name = "motivo_expiracao", length = 240)
+	private String motivoExpiracao;
+
 	@PrePersist
 	void prePersist() {
-		// Garante o registro do instante de geracao mesmo quando nao definido explicitamente.
-		dataGeracao = LocalDateTime.now();
+		if (dataGeracao == null) {
+			dataGeracao = LocalDateTime.now();
+		}
+	}
+
+	public boolean podeReceberAssinaturas() {
+		return status == ContratoStatus.AGUARDANDO_ASSINATURAS || status == ContratoStatus.ASSINADO_PARCIALMENTE;
+	}
+
+	public boolean estaExpirado(LocalDateTime instante) {
+		return podeReceberAssinaturas()
+			&& dataExpiracaoAssinatura != null
+			&& dataExpiracaoAssinatura.isBefore(instante);
+	}
+
+	public void marcarExpirado(String motivo, LocalDateTime instante) {
+		if (!podeReceberAssinaturas()) {
+			return;
+		}
+		status = ContratoStatus.EXPIRADO;
+		motivoExpiracao = motivo;
+		dataUltimaVerificacaoAssinatura = instante;
+	}
+
+	public void registrarVerificacaoAssinatura(LocalDateTime instante) {
+		dataUltimaVerificacaoAssinatura = instante;
 	}
 
 	public Long getId() {
@@ -131,6 +145,14 @@ public class Contrato {
 		this.hashDocumento = hashDocumento;
 	}
 
+	public String getHashPdfEmitido() {
+		return hashPdfEmitido;
+	}
+
+	public void setHashPdfEmitido(String hashPdfEmitido) {
+		this.hashPdfEmitido = hashPdfEmitido;
+	}
+
 	public LocalDateTime getDataGeracao() {
 		return dataGeracao;
 	}
@@ -149,5 +171,17 @@ public class Contrato {
 
 	public void setDataFormalizacao(LocalDateTime dataFormalizacao) {
 		this.dataFormalizacao = dataFormalizacao;
+	}
+
+	public LocalDateTime getDataUltimaVerificacaoAssinatura() {
+		return dataUltimaVerificacaoAssinatura;
+	}
+
+	public String getMotivoExpiracao() {
+		return motivoExpiracao;
+	}
+
+	public void setMotivoExpiracao(String motivoExpiracao) {
+		this.motivoExpiracao = motivoExpiracao;
 	}
 }
