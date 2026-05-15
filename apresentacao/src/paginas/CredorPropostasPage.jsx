@@ -26,6 +26,9 @@ function getCreditorWorkflowHint(status) {
   }
 }
 
+const simulationDisclaimer =
+  'Simulação acadêmica: os valores, percentuais e próximas etapas desta tela demonstram apenas o fluxo do protótipo, sem liquidação financeira real nem validação regulatória da operação.';
+
 export default function CredorPropostasPage() {
   const { token, hasBankAccount } = useAuth();
   const navigate = useNavigate();
@@ -94,7 +97,7 @@ export default function CredorPropostasPage() {
   const handleStartAnalysis = async (proposalId) => {
     await runAction(
       () => api.startProposalAnalysis(token, proposalId),
-      `Analise iniciada para a proposta #${proposalId}.`
+      `Análise iniciada para a proposta #${proposalId}.`
     );
   };
 
@@ -131,7 +134,7 @@ export default function CredorPropostasPage() {
 
       <SectionCard
         title="Propostas aguardando aceite"
-        subtitle="Selecione uma proposta aberta para vinculá-la ao seu perfil e mover o fluxo para análise."
+        subtitle="Selecione uma proposta aberta para vinculá-la ao seu perfil e mover o fluxo simulado para análise."
       >
         {loading ? (
           <p className="helper-text">Carregando propostas aguardando aceite...</p>
@@ -174,7 +177,7 @@ export default function CredorPropostasPage() {
 
       <SectionCard
         title="Proposta selecionada"
-        subtitle="Confira os dados antes de aceitar a proposta e assumir a análise."
+        subtitle="Confira os dados da simulação antes de aceitar a proposta e assumir a análise."
         actions={
           <button
             type="button"
@@ -186,6 +189,7 @@ export default function CredorPropostasPage() {
           </button>
         }
       >
+        <p className="helper-text">{simulationDisclaimer}</p>
         {selectedProposal ? (
           <dl className="detail-grid">
             <div>
@@ -207,7 +211,7 @@ export default function CredorPropostasPage() {
               <dd>{formatCurrency(selectedProposal.valorSolicitado)}</dd>
             </div>
             <div>
-              <dt>Taxa de juros</dt>
+              <dt>Taxa simulada</dt>
               <dd>{selectedProposal.taxaJuros}%</dd>
             </div>
             <div>
@@ -241,7 +245,7 @@ export default function CredorPropostasPage() {
 
       <SectionCard
         title="Carteira do credor"
-        subtitle="Propostas assumidas por você e o próximo passo operacional de cada uma."
+        subtitle="Propostas simuladas assumidas por você e o próximo passo operacional de cada uma."
       >
         {loading ? (
           <p className="helper-text">Carregando carteira do credor...</p>

@@ -171,14 +171,6 @@ function getBankAccountStatusValue(account, requiresBankAccount) {
   return requiresBankAccount ? 'PENDENTE' : 'OPCIONAL';
 }
 
-function getBankAccountStatusText(account, requiresBankAccount) {
-  if (account) {
-    return 'Cadastrada';
-  }
-
-  return requiresBankAccount ? 'Pendente' : 'Opcional';
-}
-
 function getDisplayId(userId) {
   if (!userId) {
     return '-';
@@ -470,7 +462,7 @@ export default function AccountPage() {
           setProfileFeedback('Cadastro e senha atualizados com sucesso.');
         } catch (passwordError) {
           setProfileFeedbackType('error');
-          setProfileFeedback(`Cadastro salvo, mas a senha nao foi atualizada: ${passwordError.message}`);
+          setProfileFeedback(`Cadastro salvo, mas a senha não foi atualizada: ${passwordError.message}`);
         }
       } else {
         setProfileFeedbackType('success');
@@ -506,14 +498,14 @@ export default function AccountPage() {
         Number(financialForm.saldoDisponivelSimulado) <= 0
       ) {
         setBankAccountFeedbackType('error');
-        setBankAccountFeedback('Informe um saldo disponivel maior que zero.');
+        setBankAccountFeedback('Informe um saldo disponível maior que zero.');
         setSavingBankAccount(false);
         return;
       }
 
       if (!financialForm.limiteOperacoes || Number(financialForm.limiteOperacoes) <= 0) {
         setBankAccountFeedbackType('error');
-        setBankAccountFeedback('Informe um limite de operacoes maior que zero.');
+        setBankAccountFeedback('Informe um limite de operações maior que zero.');
         setSavingBankAccount(false);
         return;
       }
@@ -539,14 +531,14 @@ export default function AccountPage() {
           setBankAccountFeedbackType('success');
           setBankAccountFeedback(
             user?.papel === 'SOLICITANTE'
-              ? 'Conta bancÃ¡ria e renda mensal salvas com sucesso.'
-              : 'Conta bancÃ¡ria e dados financeiros salvos com sucesso.'
+              ? 'Conta bancária e renda mensal salvas com sucesso.'
+              : 'Conta bancária e dados financeiros salvos com sucesso.'
           );
         } catch (financialError) {
           updateUser(fallbackUser);
           setBankAccountFeedbackType('error');
           setBankAccountFeedback(
-            `Conta bancÃ¡ria salva, mas os dados financeiros nao foram atualizados: ${financialError.message}`
+            `Conta bancária salva, mas os dados financeiros não foram atualizados: ${financialError.message}`
           );
         }
         return;
@@ -601,10 +593,10 @@ export default function AccountPage() {
         tone: 'green'
       },
       {
-        icon: 'bank',
-        label: 'Conta bancária',
-        value: getBankAccountStatusText(bankAccount, requiresBankAccount),
-        tone: bankAccount ? 'blue' : requiresBankAccount ? 'rose' : 'blue'
+        icon: 'id-card',
+        label: 'Identificador da conta',
+        value: getDisplayId(user?.id),
+        tone: 'blue'
       },
       {
         icon: 'clock',
@@ -613,7 +605,7 @@ export default function AccountPage() {
         tone: 'violet'
       }
     ],
-    [bankAccount, bankAccountUpdatedAt, requiresBankAccount, user]
+    [bankAccountUpdatedAt, user]
   );
   const displayedPasswordValue = isEditingPassword ? passwordForm.senha : MASKED_PASSWORD_VALUE;
   const rendaMensalIndicatorText = 'Renda mensal cadastrada';
@@ -651,7 +643,7 @@ export default function AccountPage() {
       <div className="account-panels-grid account-profile-grid">
         <AccountPanel
           icon="user"
-          title="Perfil e dados pessoais"
+          title="Dados pessoais"
           className="account-panel-wide"
         >
           {loading ? (
@@ -680,18 +672,8 @@ export default function AccountPage() {
                 </label>
 
                 <label className="account-readonly-field">
-                  Identificador da conta
-                  <input value={getDisplayId(user?.id)} readOnly />
-                </label>
-
-                <label className="account-readonly-field">
                   CPF
                   <input value={formatCpf(user?.cpf) || ''} readOnly />
-                </label>
-
-                <label className="account-readonly-field">
-                  Perfil
-                  <input value={roleSummary(user?.papel)} readOnly />
                 </label>
 
                 <label>
@@ -1020,7 +1002,7 @@ export default function AccountPage() {
               {user?.papel === 'CREDOR' ? (
                 <>
                   <label>
-                    Saldo disponivel
+                    Saldo disponível
                     <input
                       type="number"
                       min="0.01"
@@ -1033,7 +1015,7 @@ export default function AccountPage() {
                   </label>
 
                   <label>
-                    Limite de operacoes
+                    Limite de operações
                     <input
                       type="number"
                       min="1"

@@ -41,9 +41,9 @@ public class SecurityConfig {
 			.formLogin(formLogin -> formLogin.disable())
 			.exceptionHandling(exception -> exception
 				.authenticationEntryPoint((request, response, authException) ->
-					writeSecurityError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Autenticacao obrigatoria."))
+					writeSecurityError(response, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", "Autenticação obrigatória."))
 				.accessDeniedHandler((request, response, accessDeniedException) ->
-					writeSecurityError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Usuario sem permissao para esta acao."))
+					writeSecurityError(response, HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Usuário sem permissão para esta ação."))
 			)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth

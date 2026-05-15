@@ -105,7 +105,7 @@ class ContratoServiceBankAccountRequirementTest {
 		when(usuarioService.usuarioAtual()).thenReturn(credorUsuario);
 		when(propostaService.buscarComPermissao(100L)).thenReturn(proposta);
 		when(contratoRepository.findByPropostaId(100L)).thenReturn(Optional.empty());
-		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."))
 			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
 
 		assertThrows(RegraNegocioException.class, () -> contratoService.gerar(100L, "127.0.0.1"));
@@ -144,7 +144,7 @@ class ContratoServiceBankAccountRequirementTest {
 		var contrato = contrato(202L, proposta, ContratoStatus.AGUARDANDO_ASSINATURAS);
 		when(usuarioService.usuarioAtual()).thenReturn(solicitanteUsuario);
 		when(contratoRepository.findById(202L)).thenReturn(Optional.of(contrato));
-		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."))
 			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
 
 		assertThrows(
@@ -165,7 +165,7 @@ class ContratoServiceBankAccountRequirementTest {
 		var contrato = contrato(206L, proposta, ContratoStatus.AGUARDANDO_ASSINATURAS);
 		when(usuarioService.usuarioAtual()).thenReturn(solicitanteUsuario);
 		when(contratoRepository.findById(206L)).thenReturn(Optional.of(contrato));
-		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."))
+		doThrow(new RegraNegocioException("Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."))
 			.when(usuarioService).exigirContaBancaria(eq(solicitanteUsuario), contains("Solicitante precisa"));
 
 		assertThrows(
@@ -232,11 +232,11 @@ class ContratoServiceBankAccountRequirementTest {
 
 		var conteudo = conteudoCaptor.getValue();
 		assertTrue(conteudo.contains("# 1. Resumo executivo"));
-		assertTrue(conteudo.contains("# 2. Identificacao das partes"));
-		assertTrue(conteudo.contains("# 7. Integridade, auditoria e limitacoes do prototipo"));
+		assertTrue(conteudo.contains("# 2. Identificação das partes"));
+		assertTrue(conteudo.contains("# 7. Integridade, auditoria e limitações do protótipo"));
 		assertTrue(conteudo.contains("CPF: 123.456.789-01"));
 		assertTrue(conteudo.contains("Solicitante: ______________________________________________"));
-		assertTrue(conteudo.contains("A confirmacao do aceite exige reautenticacao curta do usuario antes do registro final."));
+		assertTrue(conteudo.contains("A confirmação do aceite exige reautenticação curta do usuário antes do registro final."));
 	}
 
 	@Test

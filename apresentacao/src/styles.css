@@ -1894,6 +1894,136 @@ textarea:focus-visible {
   gap: 16px;
 }
 
+.compact-proposal-form {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.compact-proposal-form label {
+  gap: 6px;
+  font-size: 0.87rem;
+  line-height: 1.2;
+}
+
+.compact-proposal-form input,
+.compact-proposal-form select,
+.compact-proposal-form textarea {
+  padding: 10px 13px;
+  min-height: 50px;
+  font-size: 0.94rem;
+  line-height: 1.2;
+  border-radius: 10px;
+}
+
+.compact-proposal-form .currency-input-shell {
+  position: relative;
+}
+
+.compact-proposal-form .currency-input-shell span {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #6f81a7;
+  font-size: 0.88rem;
+  font-weight: 760;
+  pointer-events: none;
+}
+
+.compact-proposal-form .currency-input-shell input {
+  padding-left: 42px;
+}
+
+.compact-proposal-form .form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.compact-proposal-form .proposal-field-split {
+  grid-column: span 2;
+}
+
+.compact-proposal-form .proposal-field-amount {
+  grid-column: 1 / span 3;
+  grid-row: 1;
+}
+
+.compact-proposal-form .proposal-field-rate {
+  grid-column: 4 / span 3;
+  grid-row: 1;
+}
+
+.compact-proposal-form .proposal-field-term {
+  grid-column: 1 / span 3;
+  grid-row: 2;
+  align-self: start;
+}
+
+.compact-proposal-form .proposal-field-category {
+  grid-column: 4 / span 3;
+  grid-row: 2;
+  align-self: start;
+}
+
+.compact-proposal-form .proposal-field-summary {
+  grid-column: 7 / -1;
+  grid-row: 1;
+}
+
+.compact-proposal-form .proposal-field-details {
+  grid-column: 7 / -1;
+  grid-row: 2;
+}
+
+.compact-proposal-form textarea {
+  min-height: 72px;
+}
+
+.compact-proposal-form .form-actions {
+  grid-column: 7 / -1;
+  grid-row: 3;
+  gap: 12px;
+  justify-content: flex-end;
+  align-self: start;
+}
+
+.compact-proposal-form .helper-text {
+  grid-column: 1 / span 6;
+  grid-row: 3;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  align-self: center;
+}
+
+.compact-proposal-form .primary-button,
+.compact-proposal-form .danger-button,
+.compact-proposal-form .secondary-button {
+  min-height: 42px;
+  padding: 0 16px;
+  font-size: 0.89rem;
+}
+
+.proposal-entry-card {
+  padding: 20px;
+  gap: 16px;
+  border-radius: 24px;
+}
+
+.proposal-entry-card .section-header {
+  gap: 14px;
+}
+
+.proposal-entry-card .section-header h2 {
+  font-size: 1.18rem;
+}
+
+.proposal-entry-card .section-header p {
+  margin-top: 2px;
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+
 .form-span-2 {
   grid-column: span 2;
 }
@@ -2047,6 +2177,132 @@ textarea:focus-visible {
   justify-items: end;
 }
 
+.borrower-proposal-card {
+  padding: 22px;
+  border: 1px solid rgba(208, 220, 240, 0.96);
+  border-radius: 24px;
+  display: grid;
+  gap: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(245, 249, 255, 0.98));
+  box-shadow: 0 18px 34px rgba(45, 74, 142, 0.06);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.borrower-proposal-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 22px 38px rgba(45, 74, 142, 0.1);
+}
+
+.borrower-proposal-card.is-highlighted {
+  border-color: rgba(var(--accent-rgb), 0.54);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 20px 38px rgba(45, 74, 142, 0.1);
+}
+
+.borrower-proposal-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.borrower-proposal-card-copy,
+.borrower-proposal-card-actions {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.borrower-proposal-card-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.borrower-proposal-card-id {
+  color: #4967a8;
+  font-size: 0.82rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.borrower-proposal-card-pipeline {
+  min-height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(235, 242, 255, 0.92);
+  color: #4460a0;
+  font-size: 0.85rem;
+  font-weight: 720;
+}
+
+.borrower-proposal-card-copy h3 {
+  margin: 0;
+  color: #10204a;
+  font-size: 1.22rem;
+  line-height: 1.2;
+}
+
+.borrower-proposal-card-copy p {
+  margin: 0;
+  color: var(--muted-strong);
+  line-height: 1.6;
+}
+
+.borrower-proposal-card-actions {
+  justify-items: end;
+}
+
+.borrower-proposal-card-actions .inline-button-group {
+  justify-content: flex-end;
+}
+
+.borrower-proposal-detail-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 14px;
+}
+
+.borrower-proposal-detail-grid div {
+  padding: 14px 16px;
+  border: 1px solid rgba(206, 218, 240, 0.96);
+  border-radius: 18px;
+  background: rgba(235, 242, 255, 0.72);
+}
+
+.borrower-proposal-detail-grid dt {
+  margin: 0 0 6px;
+  color: #64779d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.borrower-proposal-detail-grid dd {
+  margin: 0;
+  color: #10204a;
+  font-size: 1rem;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.borrower-proposal-detail-grid .borrower-proposal-detail-wide {
+  grid-column: 1 / -1;
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2090,20 +2346,20 @@ textarea:focus-visible {
 }
 
 .contracts-hero {
-  min-height: 372px;
-  padding: clamp(24px, 3.4vw, 34px);
+  min-height: 0;
+  padding: clamp(24px, 3vw, 32px);
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.95fr);
+  gap: 24px;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 36px;
+  border: 1px solid rgba(var(--accent-rgb), 0.1);
+  border-radius: 32px;
   background:
-    radial-gradient(circle at 82% 14%, rgba(84, 140, 255, 0.28), transparent 26%),
-    radial-gradient(circle at 4% 100%, rgba(32, 190, 148, 0.18), transparent 24%),
-    linear-gradient(135deg, rgba(6, 15, 40, 0.98), rgba(12, 31, 84, 0.98) 56%, rgba(17, 50, 126, 0.96));
-  box-shadow: 0 32px 88px rgba(4, 12, 30, 0.26);
+    radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.14), transparent 28%),
+    radial-gradient(circle at 0% 100%, rgba(42, 209, 155, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(242, 247, 255, 0.96));
+  box-shadow: var(--shadow);
 }
 
 .contracts-hero::before,
@@ -2118,23 +2374,22 @@ textarea:focus-visible {
 .contracts-hero::before {
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.72), transparent 88%);
+    linear-gradient(rgba(var(--accent-rgb), 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--accent-rgb), 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28), transparent 90%);
 }
 
 .contracts-hero::after {
-  right: -86px;
-  bottom: -118px;
-  width: 290px;
-  height: 290px;
+  right: -54px;
+  top: -42px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
-  border: 42px solid rgba(255, 255, 255, 0.06);
+  border: 30px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .contracts-hero-copy,
-.contracts-hero-aside,
 .contracts-hero-stats,
 .contract-command-main,
 .contract-command-side,
@@ -2146,7 +2401,8 @@ textarea:focus-visible {
 
 .contracts-hero-copy {
   display: grid;
-  align-content: center;
+  gap: 14px;
+  align-content: start;
 }
 
 .contracts-hero-kicker,
@@ -2158,9 +2414,9 @@ textarea:focus-visible {
   align-items: center;
   gap: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #d8e7ff;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: #2f63d2;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
   font-size: 0.79rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -2168,38 +2424,28 @@ textarea:focus-visible {
 }
 
 .contracts-hero-copy h1 {
-  max-width: 10ch;
-  margin: 16px 0 12px;
-  color: #ffffff;
-  font-size: clamp(2.45rem, 5.2vw, 4.2rem);
-  line-height: 0.92;
-  letter-spacing: -0.075em;
+  max-width: 13ch;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(2.35rem, 4.8vw, 3.7rem);
+  line-height: 0.95;
+  letter-spacing: -0.07em;
 }
 
 .contracts-hero-copy p {
-  max-width: 58ch;
+  max-width: 52ch;
   margin: 0;
-  color: rgba(232, 240, 255, 0.82);
+  color: var(--muted-strong);
   font-size: 1.01rem;
 }
 
-.contracts-hero-tags,
-.contract-spotlight-meta,
-.contract-list-card-meta,
-.contract-action-pills {
+.contract-list-card-meta {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.contracts-hero-tags {
-  margin-top: 18px;
-}
-
-.contracts-hero-tags span,
-.contract-spotlight-meta span,
-.contract-list-card-meta span,
-.contract-action-pill {
+.contract-list-card-meta span {
   min-height: 35px;
   padding: 0 12px;
   display: inline-flex;
@@ -2212,33 +2458,22 @@ textarea:focus-visible {
   font-size: 0.87rem;
 }
 
-.contracts-hero-tags span {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.1);
-  color: #edf4ff;
-}
-
-.contracts-hero-aside {
-  display: grid;
-  align-items: center;
-}
-
 .contracts-hero-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .contracts-hero-stat {
-  min-height: 128px;
-  padding: 16px 16px 18px;
+  min-height: 116px;
+  padding: 18px;
   display: grid;
   gap: 12px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
-  backdrop-filter: blur(18px);
-  color: #ffffff;
+  border-radius: 22px;
+  border: 1px solid rgba(219, 228, 245, 0.96);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 16px 34px rgba(46, 76, 145, 0.08);
+  color: var(--text-soft);
 }
 
 .contracts-hero-stat-top {
@@ -2261,8 +2496,8 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.12);
-  color: #f5f8ff;
+  background: rgba(var(--accent-rgb), 0.1);
+  color: #2f63d2;
 }
 
 .contracts-hero-stat-label,
@@ -2276,26 +2511,25 @@ textarea:focus-visible {
 }
 
 .contracts-hero-stat-label {
-  color: rgba(226, 236, 255, 0.78);
+  color: #7082a6;
 }
 
 .contracts-hero-stat strong {
-  color: #ffffff;
-  font-size: clamp(1.7rem, 2.5vw, 2.05rem);
+  color: var(--text-soft);
+  font-size: clamp(1.55rem, 2.2vw, 1.95rem);
   line-height: 1;
   letter-spacing: -0.05em;
 }
 
 .contracts-hero-stat p,
 .contract-command-side-card p,
-.contract-flow-copy p,
-.contract-guidance-copy {
+.contract-flow-copy p {
   margin: 0;
   color: var(--muted-strong);
 }
 
 .contracts-hero-stat p {
-  color: rgba(225, 235, 255, 0.74);
+  color: var(--muted);
 }
 
 .contract-utility-badge {
@@ -2311,11 +2545,6 @@ textarea:focus-visible {
   font-size: 0.81rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.contract-utility-badge-strong {
-  background: rgba(var(--accent-rgb), 0.1);
-  color: #315bc0;
 }
 
 .contracts-workspace {
@@ -2409,7 +2638,7 @@ textarea:focus-visible {
 }
 
 .contract-list-card-actions {
-  min-width: 170px;
+  min-width: 136px;
   align-content: start;
 }
 
@@ -2420,36 +2649,36 @@ textarea:focus-visible {
 
 .contract-command-board {
   --contract-tone-rgb: var(--accent-rgb);
-  padding: clamp(24px, 3vw, 34px);
+  padding: clamp(24px, 3vw, 32px);
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(260px, 0.88fr);
+  gap: 20px;
   position: relative;
   overflow: hidden;
-  border-radius: 30px;
+  border-radius: 28px;
   border: 1px solid rgba(var(--contract-tone-rgb), 0.18);
   background:
-    radial-gradient(circle at 78% 14%, rgba(var(--contract-tone-rgb), 0.16), transparent 24%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(241, 247, 255, 0.96));
-  box-shadow: var(--shadow);
+    radial-gradient(circle at 100% 0%, rgba(var(--contract-tone-rgb), 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 255, 0.96));
+  box-shadow: 0 24px 56px rgba(50, 83, 160, 0.12);
 }
 
 .contract-command-board::before {
   inset: 0;
   background-image:
-    linear-gradient(rgba(var(--contract-tone-rgb), 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(var(--contract-tone-rgb), 0.05) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent 88%);
+    linear-gradient(rgba(var(--contract-tone-rgb), 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--contract-tone-rgb), 0.045) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 88%);
 }
 
 .contract-command-board::after {
-  right: -82px;
-  bottom: -116px;
-  width: 290px;
-  height: 290px;
+  right: -58px;
+  bottom: -92px;
+  width: 214px;
+  height: 214px;
   border-radius: 50%;
-  border: 42px solid rgba(var(--contract-tone-rgb), 0.12);
+  border: 32px solid rgba(var(--contract-tone-rgb), 0.1);
 }
 
 .contract-tone-warning {
@@ -2479,11 +2708,11 @@ textarea:focus-visible {
 }
 
 .contract-command-header h2 {
-  margin: 18px 0 10px;
+  margin: 14px 0 8px;
   color: var(--text-soft);
-  font-size: clamp(2.1rem, 4vw, 3.3rem);
-  line-height: 0.94;
-  letter-spacing: -0.065em;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.06em;
 }
 
 .contract-command-header p {
@@ -2492,50 +2721,69 @@ textarea:focus-visible {
   color: var(--muted-strong);
 }
 
-.contract-spotlight-meta {
-  margin-top: 4px;
-}
-
 .contract-spotlight-summary {
   margin: 0;
-  padding: 18px 20px;
+  padding: 16px 18px;
   border: 1px solid rgba(var(--contract-tone-rgb), 0.14);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.88);
   color: var(--muted-strong);
+  line-height: 1.6;
 }
 
-.contract-action-pill {
+.contract-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.contract-fact-card {
+  min-width: 0;
+  padding: 14px 15px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--contract-tone-rgb), 0.14);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.contract-fact-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--contract-tone-rgb), 0.1);
+  color: rgb(var(--contract-tone-rgb));
+}
+
+.contract-fact-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.contract-fact-copy span {
+  color: #7283a5;
+  font-size: 0.75rem;
   font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.contract-action-pill-info {
-  background: rgba(var(--accent-rgb), 0.12);
-  border-color: rgba(var(--accent-rgb), 0.18);
-  color: #3564d1;
-}
-
-.contract-action-pill-warning {
-  background: rgba(255, 183, 77, 0.16);
-  border-color: rgba(255, 183, 77, 0.24);
-  color: #9a5f14;
-}
-
-.contract-action-pill-success {
-  background: rgba(42, 209, 155, 0.15);
-  border-color: rgba(42, 209, 155, 0.22);
-  color: #1a7f5f;
-}
-
-.contract-action-pill-danger {
-  background: rgba(255, 100, 125, 0.14);
-  border-color: rgba(255, 100, 125, 0.22);
-  color: #b33a52;
+.contract-fact-copy strong {
+  color: var(--text-soft);
+  font-size: 0.98rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .contract-command-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
 }
 
@@ -2556,12 +2804,16 @@ textarea:focus-visible {
   background: rgba(255, 255, 255, 0.86);
 }
 
+.contract-command-side-card strong {
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
 .contract-command-side-card strong,
 .contract-document-card strong,
 .contract-flow-copy strong,
 .contract-finance-metric strong,
-.contract-installment-copy strong,
-.contract-reference-grid strong {
+.contract-installment-copy strong {
   color: var(--text-soft);
 }
 
@@ -2571,8 +2823,7 @@ textarea:focus-visible {
 }
 
 .contract-flow-grid,
-.contract-finance-metrics,
-.contract-reference-grid {
+.contract-finance-metrics {
   display: grid;
 }
 
@@ -2641,7 +2892,7 @@ textarea:focus-visible {
 
 .contracts-stage-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
   gap: 20px;
   align-items: start;
 }
@@ -2667,8 +2918,7 @@ textarea:focus-visible {
   background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(240, 246, 255, 0.96));
 }
 
-.contract-finance-metric span,
-.contract-reference-grid small {
+.contract-finance-metric span {
   color: #7283a5;
 }
 
@@ -2728,6 +2978,18 @@ textarea:focus-visible {
   gap: 16px;
 }
 
+.contract-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.contract-document-hash {
+  display: grid;
+  gap: 10px;
+}
+
 .contract-document-head .secondary-button,
 .contract-document-card .secondary-button {
   width: fit-content;
@@ -2735,20 +2997,9 @@ textarea:focus-visible {
 
 .contract-code-box {
   margin-top: 2px;
-  min-height: 110px;
+  min-height: 96px;
   align-content: center;
   background: linear-gradient(180deg, #f4f8ff, #ebf3ff);
-}
-
-.contract-reference-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.contract-reference-grid div {
-  min-width: 0;
-  display: grid;
-  gap: 6px;
 }
 
 .contract-pill {
@@ -2827,17 +3078,14 @@ textarea:focus-visible {
   }
 
   .contracts-hero-stats,
+  .contract-fact-grid,
   .contract-flow-grid,
   .contract-finance-metrics,
-  .contract-reference-grid,
   .contract-command-actions {
     grid-template-columns: 1fr;
   }
 
-  .contracts-hero-tags,
-  .contract-spotlight-meta,
-  .contract-list-card-meta,
-  .contract-action-pills {
+  .contract-list-card-meta {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2847,6 +3095,10 @@ textarea:focus-visible {
   .contract-installment-item {
     grid-template-columns: 1fr;
     display: grid;
+  }
+
+  .contract-document-actions {
+    justify-content: stretch;
   }
 
   .contract-list-card-topline {
@@ -4474,6 +4726,45 @@ textarea:focus-visible {
   .list-meta,
   .stack-actions {
     justify-items: start;
+  }
+
+  .borrower-proposal-card-head {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-proposal-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compact-proposal-form .proposal-field-amount,
+  .compact-proposal-form .proposal-field-rate,
+  .compact-proposal-form .proposal-field-term,
+  .compact-proposal-form .proposal-field-category {
+    grid-column: span 1;
+    grid-row: auto;
+  }
+
+  .compact-proposal-form .proposal-field-summary,
+  .compact-proposal-form .proposal-field-details,
+  .compact-proposal-form .proposal-field-split {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .compact-proposal-form .form-actions,
+  .compact-proposal-form .helper-text {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .compact-proposal-form .form-actions {
+    justify-content: flex-start;
+  }
+
+  .borrower-proposal-card-actions,
+  .borrower-proposal-card-actions .inline-button-group {
+    justify-items: start;
+    justify-content: flex-start;
   }
 
   .exchange-table-head {
@@ -7676,6 +7967,25 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
+.dashboard-reference-filter-row {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dashboard-reference-filter-field {
+  min-width: 168px;
+  display: grid;
+  gap: 6px;
+  color: #6f81a7;
+  font-size: 0.75rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .dashboard-reference-select-shell {
   position: relative;
   flex: 0 0 auto;
@@ -7747,6 +8057,199 @@ textarea:focus-visible {
   fill: #7f90b1;
   font-size: 12px;
   font-family: inherit;
+}
+
+.dashboard-borrower-panel {
+  gap: 16px;
+}
+
+.dashboard-borrower-hero,
+.dashboard-borrower-fact-grid,
+.dashboard-borrower-step-grid {
+  display: grid;
+}
+
+.dashboard-borrower-hero {
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+  gap: 16px;
+}
+
+.dashboard-borrower-spotlight,
+.dashboard-borrower-fact-card,
+.dashboard-borrower-step-card,
+.dashboard-borrower-meta-card {
+  border: 1px solid rgba(214, 224, 241, 0.94);
+}
+
+.dashboard-borrower-spotlight {
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(240, 246, 255, 0.96));
+}
+
+.dashboard-borrower-spotlight > strong {
+  color: #10204a;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.dashboard-borrower-spotlight > p,
+.dashboard-borrower-fact-card p,
+.dashboard-borrower-step-copy p {
+  margin: 0;
+  color: #607399;
+}
+
+.dashboard-borrower-meta-card {
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.dashboard-borrower-meta-card span,
+.dashboard-borrower-fact-top span,
+.dashboard-borrower-step-copy span {
+  color: #7283a5;
+  font-size: 0.76rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dashboard-borrower-meta-card strong,
+.dashboard-borrower-fact-card strong,
+.dashboard-borrower-step-copy strong {
+  color: #10204a;
+}
+
+.dashboard-borrower-meta-card strong {
+  font-size: 1rem;
+}
+
+.dashboard-borrower-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-borrower-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  color: #6f81a7;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.dashboard-borrower-progress-head strong {
+  color: #315bc0;
+  font-size: 0.88rem;
+}
+
+.dashboard-borrower-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dfe9ff;
+}
+
+.dashboard-borrower-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2d73ff, #78adff);
+}
+
+.dashboard-borrower-progress small {
+  color: #7b8baa;
+  font-size: 0.84rem;
+}
+
+.dashboard-borrower-fact-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-borrower-fact-card {
+  min-height: 132px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.dashboard-borrower-fact-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: #2d73ff;
+}
+
+.dashboard-borrower-fact-card strong {
+  font-size: clamp(1.2rem, 1.8vw, 1.7rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-borrower-step-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-borrower-step-card {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  color: inherit;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.dashboard-borrower-step-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(38, 90, 255, 0.18);
+  box-shadow: 0 18px 30px rgba(44, 73, 148, 0.08);
+}
+
+.dashboard-borrower-step-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #eef4ff, #e4eeff);
+  color: #265aff;
+}
+
+.dashboard-borrower-step-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.dashboard-borrower-step-copy strong {
+  font-size: 0.98rem;
+  line-height: 1.32;
+}
+
+.dashboard-borrower-step-arrow {
+  color: #7d8dab;
 }
 
 .dashboard-reference-list {
@@ -8316,6 +8819,11 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .dashboard-borrower-hero,
+  .dashboard-borrower-step-grid {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-reference-header {
     display: grid;
     align-items: start;
@@ -8339,6 +8847,10 @@ textarea:focus-visible {
 
   .dashboard-reference-stat-grid,
   .dashboard-reference-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-borrower-fact-grid {
     grid-template-columns: 1fr;
   }
 
@@ -8412,6 +8924,48 @@ textarea:focus-visible {
 
   .dashboard-reference-panel-head {
     flex-direction: column;
+  }
+
+  .dashboard-reference-filter-row {
+    width: 100%;
+  }
+
+  .dashboard-reference-filter-field {
+    min-width: 0;
+  }
+
+  .dashboard-borrower-progress-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .compact-proposal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-proposal-form .proposal-field-amount,
+  .compact-proposal-form .proposal-field-rate,
+  .compact-proposal-form .proposal-field-term,
+  .compact-proposal-form .proposal-field-category,
+  .compact-proposal-form .proposal-field-summary,
+  .compact-proposal-form .proposal-field-details,
+  .compact-proposal-form .proposal-field-split {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .compact-proposal-form .form-actions,
+  .compact-proposal-form .helper-text {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .dashboard-borrower-step-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .dashboard-borrower-step-arrow {
+    display: none;
   }
 
   .account-form-actions .primary-button {

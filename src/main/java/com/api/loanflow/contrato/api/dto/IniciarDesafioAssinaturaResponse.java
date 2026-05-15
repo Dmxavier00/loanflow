@@ -25,10 +25,10 @@ public record IniciarDesafioAssinaturaResponse(
 
 	private static String montarMensagem(MetodoAutenticacaoAssinatura metodo, String mascaraDestino) {
 		if (metodo == MetodoAutenticacaoAssinatura.CODIGO_ONE_TIME && mascaraDestino != null && !mascaraDestino.isBlank()) {
-			return "Codigo temporario emitido para o destino mascarado. Confirme a assinatura antes do prazo informado.";
+			return "Código temporário emitido para o destino mascarado. Confirme a assinatura antes do prazo informado.";
 		}
 		if (metodo == MetodoAutenticacaoAssinatura.CODIGO_ONE_TIME) {
-			return "Codigo temporario emitido. Confirme a assinatura antes do prazo informado.";
+			return "Código temporário emitido. Confirme a assinatura antes do prazo informado.";
 		}
 		return "Desafio iniciado. Confirme a assinatura antes do prazo informado.";
 	}

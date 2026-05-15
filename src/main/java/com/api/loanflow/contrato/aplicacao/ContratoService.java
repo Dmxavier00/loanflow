@@ -99,7 +99,7 @@ public class ContratoService {
 			throw new RegraNegocioException("Contrato so pode ser gerado para proposta aprovada.");
 		}
 		if (contratoRepository.findByPropostaId(propostaId).isPresent()) {
-			throw new RegraNegocioException("Contrato ja gerado para esta proposta.");
+			throw new RegraNegocioException("Contrato já gerado para esta proposta.");
 		}
 		exigirCredorOuAdmin(usuario, proposta);
 		exigirContasBancariasDaProposta(proposta);
@@ -131,8 +131,8 @@ public class ContratoService {
 		contrato = contratoRepository.save(contrato);
 
 		auditoriaService.registrar(usuario, AuditoriaAcao.GERAR_CONTRATO, "Contrato", contrato.getId(), "Contrato gerado com hash SHA-256.", ipOrigem);
-		notificacaoService.criar(proposta.getSolicitante().getUsuario(), TipoNotificacao.CONTRATO, "Contrato disponivel para assinatura.", "Contrato", contrato.getId());
-		notificacaoService.criar(proposta.getCredor().getUsuario(), TipoNotificacao.CONTRATO, "Contrato disponivel para assinatura.", "Contrato", contrato.getId());
+		notificacaoService.criar(proposta.getSolicitante().getUsuario(), TipoNotificacao.CONTRATO, "Contrato disponível para assinatura.", "Contrato", contrato.getId());
+		notificacaoService.criar(proposta.getCredor().getUsuario(), TipoNotificacao.CONTRATO, "Contrato disponível para assinatura.", "Contrato", contrato.getId());
 		return ContratoResponse.from(contrato);
 	}
 
@@ -164,7 +164,7 @@ public class ContratoService {
 		contratoExpiracaoService.expirarPendentes();
 		var contrato = buscarComPermissao(id);
 		if (contrato.getPdfPath() == null) {
-			throw new RecursoNaoEncontradoException("PDF do contrato nao encontrado.");
+			throw new RecursoNaoEncontradoException("PDF do contrato não encontrado.");
 		}
 		return pdfContratoService.lerPdf(contrato.getPdfPath());
 	}
@@ -205,7 +205,7 @@ public class ContratoService {
 		var instanteAssinatura = LocalDateTime.now();
 		contrato.registrarVerificacaoAssinatura(instanteAssinatura);
 		if (!documentoIntegro) {
-			throw new RegraNegocioException("A integridade do contrato nao pode ser confirmada para assinatura.");
+			throw new RegraNegocioException("A integridade do contrato não pode ser confirmada para assinatura.");
 		}
 
 		var assinatura = new AssinaturaEletronica();
@@ -236,7 +236,7 @@ public class ContratoService {
 			contrato,
 			usuario,
 			EventoAssinaturaTipo.ASSINATURA_CONFIRMADA,
-			"Aceite eletronico confirmado apos reautenticacao.",
+			"Aceite eletrônico confirmado após reautenticação.",
 			ipOrigem,
 			userAgent
 		);
@@ -250,16 +250,16 @@ public class ContratoService {
 				contrato,
 				usuario,
 				EventoAssinaturaTipo.CONTRATO_FORMALIZADO,
-				"Contrato formalizado apos a confirmacao das duas assinaturas obrigatorias.",
+				"Contrato formalizado após a confirmação das duas assinaturas obrigatórias.",
 				ipOrigem,
 				userAgent
 			);
-			auditoriaService.registrar(usuario, AuditoriaAcao.FORMALIZAR, "Contrato", contrato.getId(), "Contrato formalizado apos assinaturas obrigatorias.", ipOrigem);
+			auditoriaService.registrar(usuario, AuditoriaAcao.FORMALIZAR, "Contrato", contrato.getId(), "Contrato formalizado após assinaturas obrigatórias.", ipOrigem);
 			parcelaService.gerarParcelas(contrato, usuario, ipOrigem);
 		} else {
 			contrato.setStatus(ContratoStatus.ASSINADO_PARCIALMENTE);
 		}
-		auditoriaService.registrar(usuario, AuditoriaAcao.ASSINAR, "Contrato", contrato.getId(), "Aceite eletronico registrado.", ipOrigem);
+		auditoriaService.registrar(usuario, AuditoriaAcao.ASSINAR, "Contrato", contrato.getId(), "Aceite eletrônico registrado.", ipOrigem);
 		return AssinaturaResponse.from(assinatura);
 	}
 
@@ -270,13 +270,13 @@ public class ContratoService {
 		var contrato = buscarComPermissao(id, usuario);
 		exigirCredorOuAdmin(usuario, contrato.getProposta());
 		if (contrato.getStatus() == ContratoStatus.FORMALIZADO) {
-			throw new RegraNegocioException("Contrato formalizado nao pode ser cancelado por este fluxo.");
+			throw new RegraNegocioException("Contrato formalizado não pode ser cancelado por este fluxo.");
 		}
 		contrato.setStatus(ContratoStatus.CANCELADO);
 		if (contrato.getProposta().getStatus() != PropostaStatus.CONTRATADA) {
 			contrato.getProposta().setStatus(PropostaStatus.CANCELADA);
 		}
-		auditoriaService.registrar(usuario, AuditoriaAcao.CANCELAR, "Contrato", contrato.getId(), "Contrato cancelado antes da formalizacao.", ipOrigem);
+		auditoriaService.registrar(usuario, AuditoriaAcao.CANCELAR, "Contrato", contrato.getId(), "Contrato cancelado antes da formalização.", ipOrigem);
 		notificacaoService.criar(contrato.getProposta().getSolicitante().getUsuario(), TipoNotificacao.CONTRATO, "Contrato cancelado.", "Contrato", contrato.getId());
 		return ContratoResponse.from(contrato);
 	}
@@ -287,7 +287,7 @@ public class ContratoService {
 
 	private Contrato buscarComPermissao(Long id, Usuario usuario) {
 		var contrato = contratoRepository.findById(id)
-			.orElseThrow(() -> new RecursoNaoEncontradoException("Contrato nao encontrado."));
+			.orElseThrow(() -> new RecursoNaoEncontradoException("Contrato não encontrado."));
 		var proposta = contrato.getProposta();
 		if (ehAdmin(usuario) || proposta.getSolicitante().getUsuario().getId().equals(usuario.getId())) {
 			return contrato;
@@ -295,7 +295,7 @@ public class ContratoService {
 		if (proposta.getCredor() != null && proposta.getCredor().getUsuario().getId().equals(usuario.getId())) {
 			return contrato;
 		}
-		throw new RecursoNaoEncontradoException("Contrato nao encontrado.");
+		throw new RecursoNaoEncontradoException("Contrato não encontrado.");
 	}
 
 	private Role identificarPapelSignatario(Usuario usuario, Proposta proposta) {
@@ -305,7 +305,7 @@ public class ContratoService {
 		if (proposta.getCredor() != null && proposta.getCredor().getUsuario().getId().equals(usuario.getId())) {
 			return Role.CREDOR;
 		}
-		throw new RegraNegocioException("Usuario nao e signatario deste contrato.");
+		throw new RegraNegocioException("Usuário não é signatário deste contrato.");
 	}
 
 	private void validarContratoDisponivelParaAssinatura(Contrato contrato) {
@@ -318,13 +318,13 @@ public class ContratoService {
 			);
 		}
 		if (!contrato.podeReceberAssinaturas()) {
-			throw new RegraNegocioException("Contrato nao esta disponivel para assinatura.");
+			throw new RegraNegocioException("Contrato não está disponível para assinatura.");
 		}
 	}
 
 	private void validarUsuarioAindaNaoAssinou(Contrato contrato, Usuario usuario) {
 		if (assinaturaRepository.existsByContratoIdAndUsuarioId(contrato.getId(), usuario.getId())) {
-			throw new RegraNegocioException("Usuario ja assinou este contrato.");
+			throw new RegraNegocioException("Usuário já assinou este contrato.");
 		}
 	}
 
@@ -354,21 +354,21 @@ public class ContratoService {
 			return;
 		}
 		if (proposta.getCredor() == null || !proposta.getCredor().getUsuario().getId().equals(usuario.getId())) {
-			throw new RegraNegocioException("Apenas o credor responsavel ou admin pode gerar o contrato.");
+			throw new RegraNegocioException("Apenas o credor responsável ou admin pode gerar o contrato.");
 		}
 	}
 
 	private void exigirContasBancariasDaProposta(Proposta proposta) {
 		usuarioService.exigirContaBancaria(
 			proposta.getSolicitante().getUsuario(),
-			"Solicitante precisa cadastrar conta bancaria antes de prosseguir com o contrato."
+			"Solicitante precisa cadastrar conta bancária antes de prosseguir com o contrato."
 		);
 		if (proposta.getCredor() == null) {
-			throw new RegraNegocioException("Proposta ainda nao possui credor vinculado.");
+			throw new RegraNegocioException("Proposta ainda não possui credor vinculado.");
 		}
 		usuarioService.exigirContaBancaria(
 			proposta.getCredor().getUsuario(),
-			"Credor precisa cadastrar conta bancaria antes de prosseguir com o contrato."
+			"Credor precisa cadastrar conta bancária antes de prosseguir com o contrato."
 		);
 	}
 
@@ -390,24 +390,25 @@ public class ContratoService {
 		var parcelaEstimada = calcularParcelaEstimada(proposta, totalEstimado);
 
 		return """
-			Contrato de Microcredito P2P - Instrumento Particular
+			Contrato de Microcrédito P2P - Instrumento Particular
 
-			Numero do contrato: %s
-			Data de emissao: %s
+			Número do contrato: %s
+			Data de emissão: %s
 			Prazo limite para assinaturas: %s
-			Plataforma emissora: Loanflow
-			Natureza do documento: formalizacao eletronica simulada para fins academicos
+			Plataforma emissora: LoanFlow
+			Natureza do documento: formalização eletrônica simulada para fins acadêmicos
 
 			# 1. Resumo executivo
 			Valor principal solicitado: %s
 			Taxa de juros simulada informada: %s
+			Periodicidade exibida na simulação: parâmetro do cenário acadêmico informado na proposta
 			Custo total estimado do contrato: %s
 			Encargos simulados estimados: %s
 			Parcela mensal estimada: %s
 			Prazo total: %s meses
 			Categoria da finalidade: %s
 
-			# 2. Identificacao das partes
+			# 2. Identificação das partes
 			## Solicitante
 			Nome completo: %s
 			CPF: %s
@@ -415,13 +416,13 @@ public class ContratoService {
 			Data de nascimento: %s
 			Estado civil: %s
 			Nacionalidade: %s
-			Profissao: %s
-			Tipo de ocupacao informada: %s
+			Profissão: %s
+			Tipo de ocupação informada: %s
 			Renda mensal declarada: %s
-			Score de credito simulado: %s
+			Score de crédito simulado: %s
 			E-mail: %s
 			Telefone: %s
-			Endereco: %s
+			Endereço: %s
 
 			## Credor
 			Nome completo: %s
@@ -430,53 +431,56 @@ public class ContratoService {
 			Data de nascimento: %s
 			Estado civil: %s
 			Nacionalidade: %s
-			Profissao: %s
+			Profissão: %s
 			E-mail: %s
 			Telefone: %s
-			Endereco: %s
+			Endereço: %s
 
-			# 3. Objeto e finalidade da operacao
+			# 3. Objeto e finalidade da operação
 			Finalidade principal declarada: %s
 			Categoria da finalidade: %s
 			Detalhamento fornecido pelo solicitante: %s
-			- O credor concorda em disponibilizar, em carater simulado, o valor principal descrito neste instrumento.
-			- O solicitante declara ciencia de que a proposta foi previamente aceita ou aprovada na plataforma.
-			- A finalidade informada integra o historico do contrato e fundamenta a analise registrada no sistema.
+			- O credor concorda em disponibilizar, em caráter simulado, o valor principal descrito neste instrumento.
+			- O solicitante declara ciência de que a proposta foi previamente aceita ou aprovada na plataforma.
+			- A finalidade informada integra o histórico do contrato e fundamenta a análise registrada no sistema.
 
-			# 4. Condicoes financeiras simuladas
+			# 4. Condições financeiras simuladas
 			- Principal concedido: %s
 			- Taxa de juros simulada aplicada: %s
 			- Montante total estimado ao fim do prazo: %s
 			- Quantidade de parcelas previstas: %s
-			- Valor medio estimado por parcela: %s
-			- As parcelas sao geradas automaticamente pela plataforma apos a formalizacao.
+			- Valor médio estimado por parcela: %s
+			- As parcelas são geradas automaticamente pela plataforma após a formalização.
+			- A taxa, os encargos e o parcelamento acima constituem apenas parâmetros de simulação acadêmica do protótipo.
+			- Este instrumento não equivale a oferta pública de crédito, parecer jurídico ou enquadramento regulatório para operação financeira real.
 
-			# 5. Fluxo de formalizacao e aceite eletronico
+			# 5. Fluxo de formalização e aceite eletrônico
 			- Este contrato nasce no status inicial de aguardando assinaturas.
-			- O aceite do solicitante e do credor deve ocorrer ate %s.
-			- Cada aceite eletronico registra usuario, papel, IP de origem, agente do navegador e carimbo temporal.
-			- A formalizacao definitiva depende das duas assinaturas obrigatorias.
-			- A confirmacao do aceite exige reautenticacao curta do usuario antes do registro final.
-			- Apos a formalizacao, a plataforma gera o cronograma de parcelas e habilita o registro manual de pagamentos.
+			- O aceite do solicitante e do credor deve ocorrer até %s.
+			- Cada aceite eletrônico registra usuário, papel, IP de origem, agente do navegador e carimbo temporal.
+			- A formalização definitiva depende das duas assinaturas obrigatórias.
+			- A confirmação do aceite exige reautenticação curta do usuário antes do registro final.
+			- Após a formalização, a plataforma gera o cronograma de parcelas e habilita o registro manual de pagamentos.
 
-			# 6. Declaracoes e responsabilidades das partes
+			# 6. Declarações e responsabilidades das partes
 			- As partes declaram que os dados cadastrais utilizados neste documento foram informados por elas na plataforma.
-			- O solicitante compromete-se a utilizar o valor conforme a finalidade declarada, ciente do carater academico e simulado da operacao.
-			- O credor reconhece que esta contratacao integra um prototipo de microcredito P2P sem liquidacao bancaria automatica.
-			- Divergencias cadastrais, cancelamentos, auditorias e registros posteriores permanecem vinculados ao numero deste contrato.
+			- O solicitante compromete-se a utilizar o valor conforme a finalidade declarada, ciente do caráter acadêmico e simulado da operação.
+			- O credor reconhece que esta contratação integra um protótipo de microcrédito P2P sem liquidação bancária automática.
+			- Divergências cadastrais, cancelamentos, auditorias e registros posteriores permanecem vinculados ao número deste contrato.
 
-			# 7. Integridade, auditoria e limitacoes do prototipo
-			- A integridade logica deste contrato e controlada por hash SHA-256 armazenado pela plataforma.
-			- O historico de geracao, assinatura, formalizacao, cancelamento e pagamentos fica sujeito a trilha de auditoria da aplicacao.
-			- Este instrumento nao representa integracao bancaria real, liquidacao automatica via PIX nem assinatura ICP-Brasil.
-			- O documento serve como evidencia funcional do fluxo de negocio implementado no projeto.
+			# 7. Integridade, auditoria e limitações do protótipo
+			- A integridade lógica deste contrato é controlada por hash SHA-256 armazenado pela plataforma.
+			- O histórico de geração, assinatura, formalização, cancelamento e pagamentos fica sujeito à trilha de auditoria da aplicação.
+			- Este instrumento não representa integração bancária real, liquidação automática via PIX nem assinatura ICP-Brasil.
+			- Percentuais, encargos e prazos exibidos neste documento exigiriam revisão jurídica e regulatória específica em eventual operação real.
+			- O documento serve como evidência funcional do fluxo de negócio implementado no projeto.
 
-			> Documento emitido eletronicamente pela plataforma Loanflow. Recomenda-se que solicitante e credor revisem os dados cadastrais, valores simulados e finalidade antes do aceite.
+			> Documento emitido eletronicamente pela plataforma LoanFlow. Recomenda-se que solicitante e credor revisem os dados cadastrais, valores simulados e finalidade antes do aceite. Este instrumento não substitui análise jurídica para operação real.
 
-			# 8. Espaco para anuencia das partes
+			# 8. Espaço para anuência das partes
 			Solicitante: ______________________________________________
 			Credor: ___________________________________________________
-			Data do aceite eletronico: _________________________________
+			Data do aceite eletrônico: _________________________________
 			""".formatted(
 			numero,
 			formatarDataHora(dataGeracao),
@@ -497,7 +501,7 @@ public class ContratoService {
 			textoOuNaoInformado(solicitanteUsuario.getProfissao()),
 			textoOuNaoInformado(solicitante.getTipoOcupacao()),
 			formatarMoedaOuNaoInformado(solicitante.getRendaMensal()),
-			solicitante.getScoreCreditoSimulado() == null ? "Nao informado" : solicitante.getScoreCreditoSimulado().toString(),
+			solicitante.getScoreCreditoSimulado() == null ? "Não informado" : solicitante.getScoreCreditoSimulado().toString(),
 			textoOuNaoInformado(solicitanteUsuario.getEmail()),
 			textoOuNaoInformado(solicitanteUsuario.getTelefone()),
 			formatarEndereco(solicitanteUsuario),
@@ -537,16 +541,16 @@ public class ContratoService {
 	}
 
 	private String formatarMoedaOuNaoInformado(BigDecimal valor) {
-		return valor == null ? "Nao informado" : formatarMoeda(valor);
+		return valor == null ? "Não informado" : formatarMoeda(valor);
 	}
 
 	private String formatarPercentual(BigDecimal valor) {
-		return valor == null ? "Nao informado" : valor.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%";
+		return valor == null ? "Não informado" : valor.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%";
 	}
 
 	private String formatarData(LocalDate data) {
 		return data == null
-			? "Nao informado"
+			? "Não informado"
 			: data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", new Locale("pt", "BR")));
 	}
 
@@ -556,7 +560,7 @@ public class ContratoService {
 
 	private String formatarCpf(String cpf) {
 		if (cpf == null) {
-			return "Nao informado";
+			return "Não informado";
 		}
 		var digitos = cpf.replaceAll("\\D", "");
 		if (digitos.length() != 11) {
@@ -572,7 +576,7 @@ public class ContratoService {
 
 	private String formatarDocumentoIdentidade(Usuario usuario) {
 		if (usuario.getTipoDocumentoIdentidade() == null && (usuario.getDocumentoIdentidade() == null || usuario.getDocumentoIdentidade().isBlank())) {
-			return "Nao informado";
+			return "Não informado";
 		}
 		var tipo = textoOuNaoInformado(humanizarEnum(usuario.getTipoDocumentoIdentidade()));
 		var numero = textoOuNaoInformado(usuario.getDocumentoIdentidade());
@@ -584,7 +588,7 @@ public class ContratoService {
 
 	private String formatarEndereco(Usuario usuario) {
 		if (usuario.getEndereco() == null || !usuario.getEndereco().isInformado()) {
-			return "Nao informado";
+			return "Não informado";
 		}
 		var endereco = usuario.getEndereco();
 		var base = "%s, %s".formatted(
@@ -615,16 +619,43 @@ public class ContratoService {
 			if (resultado.length() > 0) {
 				resultado.append(' ');
 			}
-			resultado.append(Character.toUpperCase(parte.charAt(0)));
-			if (parte.length() > 1) {
-				resultado.append(parte.substring(1));
-			}
+			var palavra = Character.toUpperCase(parte.charAt(0)) + (parte.length() > 1 ? parte.substring(1) : "");
+			resultado.append(aplicarAcentuacao(palavra));
 		}
 		return resultado.toString();
 	}
 
 	private String textoOuNaoInformado(String valor) {
-		return valor == null || valor.isBlank() ? "Nao informado" : valor.trim();
+		return valor == null || valor.isBlank() ? "Não informado" : valor.trim();
+	}
+
+	private String aplicarAcentuacao(String valor) {
+		return switch (valor) {
+			case "Analise" -> "Análise";
+			case "Autenticacao" -> "Autenticação";
+			case "Codigo" -> "Código";
+			case "Credito" -> "Crédito";
+			case "Dividas" -> "Dívidas";
+			case "Eletronica" -> "Eletrônica";
+			case "Eletronico" -> "Eletrônico";
+			case "Emissao" -> "Emissão";
+			case "Endereco" -> "Endereço";
+			case "Estavel" -> "Estável";
+			case "Expiracao" -> "Expiração";
+			case "Historico" -> "Histórico";
+			case "Nao" -> "Não";
+			case "Numero" -> "Número";
+			case "Operacao" -> "Operação";
+			case "Operacoes" -> "Operações";
+			case "Orgao" -> "Órgão";
+			case "Poupanca" -> "Poupança";
+			case "Quitacao" -> "Quitação";
+			case "Saude" -> "Saúde";
+			case "Uniao" -> "União";
+			case "Usuario" -> "Usuário";
+			case "Viuvo" -> "Viúvo";
+			default -> valor;
+		};
 	}
 
 	private Specification<Contrato> specAcessivelAoUsuario(Usuario usuario) {

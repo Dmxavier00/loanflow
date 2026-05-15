@@ -184,7 +184,7 @@ class ContratoControllerWebTest {
 	void assinarDeveRetornarErroQuandoDesafioInvalido() throws Exception {
 		var desafioId = UUID.randomUUID();
 		when(contratoService.assinar(eq(7L), eq(desafioId), eq("000000"), eq("127.0.0.1"), eq(null)))
-			.thenThrow(new RegraNegocioException("Desafio de assinatura invalido."));
+			.thenThrow(new RegraNegocioException("Desafio de assinatura inválido."));
 
 		mockMvc.perform(
 				post("/contratos/7/assinar")
@@ -199,14 +199,14 @@ class ContratoControllerWebTest {
 					.with(user("solicitante@loanflow.test").roles("SOLICITANTE"))
 			)
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.message").value("Desafio de assinatura invalido."));
+			.andExpect(jsonPath("$.message").value("Desafio de assinatura inválido."));
 	}
 
 	@Test
 	void assinarDeveRetornarErroQuandoDesafioExpirado() throws Exception {
 		var desafioId = UUID.randomUUID();
 		when(contratoService.assinar(eq(7L), eq(desafioId), eq("123456"), eq("127.0.0.1"), eq(null)))
-			.thenThrow(new RegraNegocioException("Desafio de assinatura expirado. Gere uma nova validacao para continuar."));
+			.thenThrow(new RegraNegocioException("Desafio de assinatura expirado. Gere uma nova validação para continuar."));
 
 		mockMvc.perform(
 				post("/contratos/7/assinar")
@@ -221,7 +221,7 @@ class ContratoControllerWebTest {
 					.with(user("solicitante@loanflow.test").roles("SOLICITANTE"))
 			)
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.message").value("Desafio de assinatura expirado. Gere uma nova validacao para continuar."));
+			.andExpect(jsonPath("$.message").value("Desafio de assinatura expirado. Gere uma nova validação para continuar."));
 	}
 
 	@Test

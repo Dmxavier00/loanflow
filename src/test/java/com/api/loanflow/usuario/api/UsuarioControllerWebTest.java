@@ -151,7 +151,7 @@ class UsuarioControllerWebTest {
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.status").value(401))
 			.andExpect(jsonPath("$.error").value("Unauthorized"))
-			.andExpect(jsonPath("$.message").value("Autenticacao obrigatoria."));
+			.andExpect(jsonPath("$.message").value("Autenticação obrigatória."));
 
 		verifyNoInteractions(usuarioService);
 	}

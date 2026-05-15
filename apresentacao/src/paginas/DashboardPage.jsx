@@ -22,6 +22,33 @@ const TREND_CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
   maximumFractionDigits: 0
 });
+const TREND_GROUP_OPTIONS = [
+  { value: 'day', label: 'Dias' },
+  { value: 'month', label: 'Meses' },
+  { value: 'year', label: 'Anos' }
+];
+const TREND_WINDOW_OPTIONS = {
+  day: [
+    { value: 7, label: 'Últimos 7 dias' },
+    { value: 15, label: 'Últimos 15 dias' },
+    { value: 30, label: 'Últimos 30 dias' }
+  ],
+  month: [
+    { value: 3, label: 'Últimos 3 meses' },
+    { value: 6, label: 'Últimos 6 meses' },
+    { value: 12, label: 'Últimos 12 meses' }
+  ],
+  year: [
+    { value: 1, label: 'Último ano' },
+    { value: 3, label: 'Últimos 3 anos' },
+    { value: 5, label: 'Últimos 5 anos' }
+  ]
+};
+const DEFAULT_TREND_WINDOW_BY_UNIT = {
+  day: 7,
+  month: 6,
+  year: 1
+};
 
 function toDateValue(value) {
   if (!value) {
@@ -47,6 +74,12 @@ function toTimeValue(value) {
 
 function sumValues(items, getter) {
   return items.reduce((sum, item) => sum + Number(getter(item) ?? 0), 0);
+}
+
+function getOutstandingInstallmentValue(installment) {
+  const expected = Number(installment?.valorPrevisto ?? 0);
+  const paid = Number(installment?.valorPagoAcumulado ?? 0);
+  return Math.max(expected - paid, 0);
 }
 
 function getDaysUntil(value) {
@@ -99,8 +132,94 @@ function formatTrendMonth(date) {
   return `${MONTH_LABELS[date.getMonth()]}/${String(date.getFullYear()).slice(-2)}`;
 }
 
+function formatTrendDay(date) {
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatTrendYear(date) {
+  return String(date.getFullYear());
+}
+
 function getMonthKey(date) {
   return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+function getDayKey(date) {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function getYearKey(date) {
+  return `${date.getFullYear()}`;
+}
+
+function getTrendKey(date, unit) {
+  if (unit === 'day') {
+    return getDayKey(date);
+  }
+
+  if (unit === 'year') {
+    return getYearKey(date);
+  }
+
+  return getMonthKey(date);
+}
+
+function normalizeTrendDate(date, unit) {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+
+  if (unit === 'year') {
+    return new Date(normalized.getFullYear(), 0, 1);
+  }
+
+  if (unit === 'month') {
+    return new Date(normalized.getFullYear(), normalized.getMonth(), 1);
+  }
+
+  return normalized;
+}
+
+function addTrendStep(date, unit, step) {
+  if (unit === 'year') {
+    return new Date(date.getFullYear() + step, 0, 1);
+  }
+
+  if (unit === 'month') {
+    return new Date(date.getFullYear(), date.getMonth() + step, 1);
+  }
+
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + step);
+}
+
+function buildTrendPeriods(unit, window) {
+  const end = normalizeTrendDate(new Date(), unit);
+  const start = addTrendStep(end, unit, -(window - 1));
+
+  return Array.from({ length: window }, (_, index) => addTrendStep(start, unit, index));
+}
+
+function formatTrendLabel(date, unit) {
+  if (unit === 'day') {
+    return formatTrendDay(date);
+  }
+
+  if (unit === 'year') {
+    return formatTrendYear(date);
+  }
+
+  return formatTrendMonth(date);
+}
+
+function getTrendLabelStep(totalPoints) {
+  if (totalPoints <= 8) {
+    return 1;
+  }
+
+  if (totalPoints <= 16) {
+    return 2;
+  }
+
+  return Math.ceil(totalPoints / 6);
 }
 
 function getDateBadgeParts(value) {
@@ -174,14 +293,9 @@ function getGenericPill(status) {
   return { label: formatLabel(status), tone: 'info' };
 }
 
-function buildTrendSeries(installments, monthWindow) {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - (monthWindow - 1), 1);
-  const months = Array.from({ length: monthWindow }, (_, index) => {
-    return new Date(start.getFullYear(), start.getMonth() + index, 1);
-  });
-
-  const paidBuckets = new Map(months.map((month) => [getMonthKey(month), 0]));
+function buildTrendSeries(installments, unit, window) {
+  const periods = buildTrendPeriods(unit, window);
+  const paidBuckets = new Map(periods.map((period) => [getTrendKey(period, unit), 0]));
 
   installments.forEach((installment) => {
     const value = Number(installment.valorPagoAcumulado ?? 0);
@@ -191,15 +305,14 @@ function buildTrendSeries(installments, monthWindow) {
       return;
     }
 
-    const normalizedDate = new Date(date.getFullYear(), date.getMonth(), 1);
-    const key = getMonthKey(normalizedDate);
+    const key = getTrendKey(normalizeTrendDate(date, unit), unit);
     if (paidBuckets.has(key)) {
       paidBuckets.set(key, paidBuckets.get(key) + value);
     }
   });
 
   const hasPaidData = [...paidBuckets.values()].some((value) => value > 0);
-  const buckets = new Map(months.map((month) => [getMonthKey(month), 0]));
+  const buckets = new Map(periods.map((period) => [getTrendKey(period, unit), 0]));
 
   installments.forEach((installment) => {
     const value = Number(
@@ -213,21 +326,20 @@ function buildTrendSeries(installments, monthWindow) {
       return;
     }
 
-    const normalizedDate = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
-    const key = getMonthKey(normalizedDate);
+    const key = getTrendKey(normalizeTrendDate(referenceDate, unit), unit);
     if (buckets.has(key)) {
       buckets.set(key, buckets.get(key) + value);
     }
   });
 
   let cumulative = 0;
-  const points = months.map((month) => {
-    const key = getMonthKey(month);
-    const monthlyValue = buckets.get(key) ?? 0;
-    cumulative += monthlyValue;
+  const points = periods.map((period) => {
+    const key = getTrendKey(period, unit);
+    const periodValue = buckets.get(key) ?? 0;
+    cumulative += periodValue;
 
     return {
-      label: formatTrendMonth(month),
+      label: formatTrendLabel(period, unit),
       value: cumulative
     };
   });
@@ -283,23 +395,20 @@ function buildChartGeometry(points) {
   };
 }
 
-function DashboardTrendChart({ points, isProjection }) {
+function DashboardTrendChart({ points, isProjection, projectionNote, ariaLabel }) {
   const geometry = buildChartGeometry(points);
+  const xLabelStep = getTrendLabelStep(geometry.coordinates.length);
 
   return (
     <div className="dashboard-reference-chart-shell">
-      {isProjection ? (
-        <p className="dashboard-reference-chart-note">
-          Sem pagamentos suficientes no período. A linha mostra a agenda prevista da carteira.
-        </p>
-      ) : null}
+      {isProjection ? <p className="dashboard-reference-chart-note">{projectionNote}</p> : null}
 
       <svg
         className="dashboard-reference-chart"
         viewBox={`0 0 ${geometry.width} ${geometry.height}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label="Gráfico de evolução financeira"
+        aria-label={ariaLabel}
       >
         <defs>
           <linearGradient id="dashboardReferenceArea" x1="0" x2="0" y1="0" y2="1">
@@ -331,7 +440,7 @@ function DashboardTrendChart({ points, isProjection }) {
         <path d={geometry.areaPath} fill="url(#dashboardReferenceArea)" />
         <path d={geometry.linePath} className="dashboard-reference-chart-line" />
 
-        {geometry.coordinates.map((point) => (
+        {geometry.coordinates.map((point, index) => (
           <g key={point.label}>
             <circle
               cx={point.x}
@@ -340,18 +449,234 @@ function DashboardTrendChart({ points, isProjection }) {
               className="dashboard-reference-chart-dot-ring"
             />
             <circle cx={point.x} cy={point.y} r="3" className="dashboard-reference-chart-dot" />
-            <text
-              x={point.x}
-              y={geometry.height - 12}
-              textAnchor="middle"
-              className="dashboard-reference-chart-x-label"
-            >
-              {point.label}
-            </text>
+            {index % xLabelStep === 0 || index === geometry.coordinates.length - 1 ? (
+              <text
+                x={point.x}
+                y={geometry.height - 12}
+                textAnchor="middle"
+                className="dashboard-reference-chart-x-label"
+              >
+                {point.label}
+              </text>
+            ) : null}
           </g>
         ))}
       </svg>
     </div>
+  );
+}
+
+function getBorrowerStatusPill(overdueCount, pendingSignatureCount, openCount) {
+  if (overdueCount) {
+    return {
+      label: `${overdueCount} atraso(s) exigem atenção`,
+      tone: 'danger'
+    };
+  }
+
+  if (pendingSignatureCount) {
+    return {
+      label: `${pendingSignatureCount} assinatura(s) pendente(s)`,
+      tone: 'warning'
+    };
+  }
+
+  if (openCount) {
+    return {
+      label: 'Fluxo em dia',
+      tone: 'success'
+    };
+  }
+
+  return {
+    label: 'Sem parcelas abertas',
+    tone: 'info'
+  };
+}
+
+function DashboardBorrowerCommitmentPanel({
+  loading,
+  totalOutstandingInstallmentValue,
+  totalOverdueOutstandingValue,
+  totalPaidInstallmentValue,
+  paidInstallmentProgress,
+  openInstallments,
+  overdueInstallments,
+  paidInstallments,
+  installments,
+  nextInstallments,
+  contractsAwaitingSignature,
+  myProposals,
+  notifications
+}) {
+  const nextInstallment = nextInstallments[0] ?? null;
+  const safeProgress = Math.max(0, Math.min(paidInstallmentProgress, 100));
+  const statusPill = getBorrowerStatusPill(
+    overdueInstallments.length,
+    contractsAwaitingSignature.length,
+    openInstallments.length
+  );
+  const borrowerFacts = [
+    {
+      icon: 'stack',
+      label: 'Parcelas abertas',
+      value: `${openInstallments.length}`,
+      helper: openInstallments.length
+        ? `${formatCurrency(totalOutstandingInstallmentValue)} ainda pendentes`
+        : 'Nenhum valor pendente'
+    },
+    {
+      icon: 'currency',
+      label: 'Já pago',
+      value: formatCurrency(totalPaidInstallmentValue),
+      helper: paidInstallments.length
+        ? `${paidInstallments.length} parcela(s) com pagamento`
+        : 'Sem pagamentos registrados'
+    },
+    {
+      icon: 'calendar',
+      label: 'Em atraso',
+      value: `${overdueInstallments.length}`,
+      helper: overdueInstallments.length
+        ? `${formatCurrency(totalOverdueOutstandingValue)} exigem regularização`
+        : 'Seu fluxo está sem atrasos'
+    },
+    {
+      icon: 'bell',
+      label: 'Alertas novos',
+      value: `${notifications.length}`,
+      helper: notifications.length
+        ? 'Há atualizações esperando leitura'
+        : 'Nenhuma atualização nova'
+    }
+  ];
+  const borrowerActions = [
+    {
+      to: '/parcelas',
+      icon: 'calendar',
+      eyebrow: 'Próximo vencimento',
+      title: nextInstallment
+        ? `Parcela ${nextInstallment.numero} · ${nextInstallment.numeroContrato}`
+        : 'Sem pagamentos agendados',
+      description: nextInstallment
+        ? `${formatRelativeDueDate(nextInstallment.dataVencimento)} · ${formatCurrency(
+            getOutstandingInstallmentValue(nextInstallment)
+          )}`
+        : 'Quando novas parcelas forem geradas, elas aparecem aqui.'
+    },
+    {
+      to: '/contratos',
+      icon: 'signature',
+      eyebrow: 'Assinaturas',
+      title: contractsAwaitingSignature.length
+        ? `${contractsAwaitingSignature.length} contrato(s) aguardando você`
+        : 'Nenhuma assinatura pendente',
+      description: contractsAwaitingSignature.length
+        ? 'Revise seus contratos para liberar a próxima etapa.'
+        : 'Seu fluxo contratual está em dia no momento.'
+    },
+    {
+      to: '/solicitacoes',
+      icon: 'file',
+      eyebrow: 'Propostas',
+      title: myProposals.length
+        ? `${myProposals.length} proposta(s) em acompanhamento`
+        : 'Sem propostas em andamento',
+      description: myProposals.length
+        ? 'Acompanhe atualização de análise, aceite e contratação.'
+        : 'Novas solicitações aparecem aqui quando você movimentar o mercado.'
+    }
+  ];
+
+  return (
+    <section className="dashboard-reference-panel dashboard-borrower-panel">
+      <div className="dashboard-reference-panel-head">
+        <div className="dashboard-reference-panel-title">
+          <span className="dashboard-reference-panel-icon" aria-hidden="true">
+            <UiIcon name="wallet" />
+          </span>
+          <div>
+            <h2>Seu compromisso atual</h2>
+            <p>Veja o que ainda falta pagar, o que já avançou e onde agir agora.</p>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="helper-text">Carregando panorama do solicitante...</p>
+      ) : (
+        <>
+          <div className="dashboard-borrower-hero">
+            <article className="dashboard-borrower-spotlight">
+              <span className={`dashboard-reference-pill tone-${statusPill.tone}`}>
+                {statusPill.label}
+              </span>
+              <strong>{formatCurrency(totalOutstandingInstallmentValue)}</strong>
+              <p>
+                {openInstallments.length
+                  ? 'Este é o valor que ainda falta sair do seu fluxo atual de parcelas.'
+                  : 'Você não tem valores pendentes no momento.'}
+              </p>
+
+              <div className="dashboard-borrower-meta-card">
+                <span>Próxima saída prevista</span>
+                <strong>
+                  {nextInstallment
+                    ? `${formatDate(nextInstallment.dataVencimento)} · ${formatCurrency(
+                        getOutstandingInstallmentValue(nextInstallment)
+                      )}`
+                    : 'Sem vencimento próximo'}
+                </strong>
+              </div>
+
+              <div className="dashboard-borrower-progress">
+                <div className="dashboard-borrower-progress-head">
+                  <span>Cronograma concluído</span>
+                  <strong>
+                    {paidInstallments.length} de {installments.length} parcela(s)
+                  </strong>
+                </div>
+                <div className="dashboard-borrower-progress-track" aria-hidden="true">
+                  <span style={{ width: `${safeProgress}%` }} />
+                </div>
+                <small>{safeProgress}% do seu cronograma já avançou.</small>
+              </div>
+            </article>
+
+            <div className="dashboard-borrower-fact-grid">
+              {borrowerFacts.map((fact) => (
+                <article key={fact.label} className="dashboard-borrower-fact-card">
+                  <div className="dashboard-borrower-fact-top">
+                    <span>{fact.label}</span>
+                    <UiIcon name={fact.icon} size={18} />
+                  </div>
+                  <strong>{fact.value}</strong>
+                  <p>{fact.helper}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="dashboard-borrower-step-grid">
+            {borrowerActions.map((action) => (
+              <Link key={action.eyebrow} to={action.to} className="dashboard-borrower-step-card">
+                <span className="dashboard-borrower-step-icon" aria-hidden="true">
+                  <UiIcon name={action.icon} />
+                </span>
+                <div className="dashboard-borrower-step-copy">
+                  <span>{action.eyebrow}</span>
+                  <strong>{action.title}</strong>
+                  <p>{action.description}</p>
+                </div>
+                <span className="dashboard-borrower-step-arrow" aria-hidden="true">
+                  <UiIcon name="arrow-right" size={16} />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -457,11 +782,19 @@ function DashboardOverviewPage() {
   const [analysisProposals, setAnalysisProposals] = useState([]);
   const [adminActionMessage, setAdminActionMessage] = useState('');
   const [adminActionType, setAdminActionType] = useState('info');
+  const [trendUnit, setTrendUnit] = useState('month');
   const [trendWindow, setTrendWindow] = useState(6);
 
   const isSolicitante = hasRole('SOLICITANTE');
   const isAdmin = hasRole('ADMIN');
   const isCredor = hasRole('CREDOR');
+  const canCustomizeTrendGranularity = isCredor;
+  const resolvedTrendUnit = isCredor ? trendUnit : 'month';
+  const trendWindowOptions =
+    TREND_WINDOW_OPTIONS[resolvedTrendUnit] ?? TREND_WINDOW_OPTIONS.month;
+  const resolvedTrendWindow = trendWindowOptions.some((option) => option.value === trendWindow)
+    ? trendWindow
+    : DEFAULT_TREND_WINDOW_BY_UNIT[resolvedTrendUnit];
 
   const loadData = async () => {
     setLoading(true);
@@ -636,6 +969,14 @@ function DashboardOverviewPage() {
     openInstallments,
     (installment) => installment.valorPrevisto
   );
+  const totalOutstandingInstallmentValue = sumValues(
+    openInstallments,
+    (installment) => getOutstandingInstallmentValue(installment)
+  );
+  const totalOverdueOutstandingValue = sumValues(
+    overdueInstallments,
+    (installment) => getOutstandingInstallmentValue(installment)
+  );
   const totalPaidInstallmentValue = sumValues(
     installments,
     (installment) => installment.valorPagoAcumulado
@@ -741,7 +1082,24 @@ function DashboardOverviewPage() {
           }
         ];
 
-  const trendSeries = buildTrendSeries(installments, trendWindow);
+  const trendSeries = buildTrendSeries(installments, resolvedTrendUnit, resolvedTrendWindow);
+  const trendPanelContent = isCredor
+    ? {
+        title: 'Evolução dos recebimentos',
+        description: 'Acompanhe quanto dinheiro entrou na sua carteira ao longo do tempo.',
+        projectionNote:
+          'Sem recebimentos suficientes no período. A linha mostra a agenda prevista dos valores a receber.',
+        loadingLabel: 'Carregando evolução dos recebimentos...',
+        ariaLabel: 'Gráfico de evolução dos recebimentos'
+      }
+    : {
+        title: 'Evolução dos pagamentos',
+        description: 'Acompanhe o progresso financeiro ao longo do tempo.',
+        projectionNote:
+          'Sem pagamentos suficientes no período. A linha mostra a agenda prevista da carteira.',
+        loadingLabel: 'Carregando evolução financeira...',
+        ariaLabel: 'Gráfico de evolução financeira'
+      };
 
   const primaryPanel = isAdmin
     ? {
@@ -892,6 +1250,12 @@ function DashboardOverviewPage() {
     }
   }
 
+  function handleTrendUnitChange(event) {
+    const nextUnit = event.target.value;
+    setTrendUnit(nextUnit);
+    setTrendWindow(DEFAULT_TREND_WINDOW_BY_UNIT[nextUnit] ?? DEFAULT_TREND_WINDOW_BY_UNIT.month);
+  }
+
   return (
     <div className="page-stack dashboard-page dashboard-reference-page">
       <MessageBanner type="error">{error}</MessageBanner>
@@ -925,38 +1289,82 @@ function DashboardOverviewPage() {
         ))}
       </section>
 
-      <section className="dashboard-reference-panel dashboard-reference-chart-panel">
-        <div className="dashboard-reference-panel-head">
-          <div className="dashboard-reference-panel-title">
-            <span className="dashboard-reference-panel-icon" aria-hidden="true">
-              <UiIcon name="chart" />
-            </span>
-            <div>
-              <h2>Evolução dos pagamentos</h2>
-              <p>Acompanhe o progresso financeiro ao longo do tempo.</p>
+      {isSolicitante ? (
+        <DashboardBorrowerCommitmentPanel
+          loading={loading}
+          totalOutstandingInstallmentValue={totalOutstandingInstallmentValue}
+          totalOverdueOutstandingValue={totalOverdueOutstandingValue}
+          totalPaidInstallmentValue={totalPaidInstallmentValue}
+          paidInstallmentProgress={paidInstallmentProgress}
+          openInstallments={openInstallments}
+          overdueInstallments={overdueInstallments}
+          paidInstallments={paidInstallments}
+          installments={installments}
+          nextInstallments={nextInstallments}
+          contractsAwaitingSignature={contractsAwaitingSignature}
+          myProposals={myProposals}
+          notifications={notifications}
+        />
+      ) : (
+        <section className="dashboard-reference-panel dashboard-reference-chart-panel">
+          <div className="dashboard-reference-panel-head">
+            <div className="dashboard-reference-panel-title">
+              <span className="dashboard-reference-panel-icon" aria-hidden="true">
+                <UiIcon name="chart" />
+              </span>
+              <div>
+                <h2>{trendPanelContent.title}</h2>
+                <p>{trendPanelContent.description}</p>
+              </div>
+            </div>
+
+            <div className="dashboard-reference-filter-row">
+              {canCustomizeTrendGranularity ? (
+                <label className="dashboard-reference-filter-field">
+                  <span>Visualização</span>
+                  <select
+                    className="dashboard-reference-select"
+                    value={trendUnit}
+                    onChange={handleTrendUnitChange}
+                  >
+                    {TREND_GROUP_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              <label className="dashboard-reference-filter-field">
+                <span>Período</span>
+                <select
+                  className="dashboard-reference-select"
+                  value={resolvedTrendWindow}
+                  onChange={(event) => setTrendWindow(Number(event.target.value))}
+                >
+                  {trendWindowOptions.map((option) => (
+                    <option key={`${resolvedTrendUnit}-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
 
-          <label className="dashboard-reference-select-shell">
-            <span className="sr-only">Período do gráfico</span>
-            <select
-              className="dashboard-reference-select"
-              value={trendWindow}
-              onChange={(event) => setTrendWindow(Number(event.target.value))}
-            >
-              <option value={3}>Últimos 3 meses</option>
-              <option value={6}>Últimos 6 meses</option>
-              <option value={12}>Últimos 12 meses</option>
-            </select>
-          </label>
-        </div>
-
-        {loading ? (
-          <p className="helper-text">Carregando evolução financeira...</p>
-        ) : (
-          <DashboardTrendChart points={trendSeries.points} isProjection={trendSeries.isProjection} />
-        )}
-      </section>
+          {loading ? (
+            <p className="helper-text">{trendPanelContent.loadingLabel}</p>
+          ) : (
+            <DashboardTrendChart
+              points={trendSeries.points}
+              isProjection={trendSeries.isProjection}
+              projectionNote={trendPanelContent.projectionNote}
+              ariaLabel={trendPanelContent.ariaLabel}
+            />
+          )}
+        </section>
+      )}
 
       <div className="dashboard-reference-bottom-grid">
         <DashboardListPanel

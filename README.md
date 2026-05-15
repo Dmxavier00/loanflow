@@ -15,6 +15,14 @@ O projeto foi construído para demonstrar um fluxo funcional de concessão de cr
 - notificações e trilha de auditoria
 - dashboard administrativo básico
 
+## Enquadramento Acadêmico
+
+O `LoanFlow` é um protótipo didático para TCC. Isso significa que:
+
+- taxas, encargos, parcelas e contratos exibidos no sistema são parâmetros de simulação acadêmica
+- o projeto não afirma conformidade automática com Bacen, STJ, Lei da Usura ou qualquer enquadramento regulatório aplicável a operações reais
+- qualquer uso fora do contexto acadêmico exigiria revisão jurídica e regulatória específica, além de integrações e controles que não fazem parte deste MVP
+
 ## Stack
 
 ### Back-end

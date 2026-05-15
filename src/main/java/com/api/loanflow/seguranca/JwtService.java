@@ -27,7 +27,7 @@ public class JwtService {
 	) {
 		if (secret == null || secret.isBlank()) {
 			throw new IllegalStateException(
-				"JWT secret nao configurado. Defina loanflow.jwt.secret ou JWT_SECRET com pelo menos 32 bytes. "
+				"JWT secret não configurado. Defina loanflow.jwt.secret ou JWT_SECRET com pelo menos 32 bytes. "
 					+ "Para a demo local, use start-demo.ps1 ou run-demo.ps1."
 			);
 		}
@@ -38,7 +38,7 @@ public class JwtService {
 		}
 
 		if (LOCAL_DEMO_SECRET.equals(secret)) {
-			log.warn("Usando JWT secret padrao de demonstracao. Sobrescreva JWT_SECRET ou loanflow.jwt.secret fora do ambiente local.");
+			log.warn("Usando JWT secret padrão de demonstração. Sobrescreva JWT_SECRET ou loanflow.jwt.secret fora do ambiente local.");
 		}
 
 		this.signingKey = Keys.hmacShaKeyFor(secretBytes);

@@ -113,7 +113,7 @@ class PropostaControllerWebTest {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.message").value("Dados de entrada inv\u00E1lidos."))
-			.andExpect(jsonPath("$.fields.taxaJuros").value("Taxa de juros deve estar entre 5% e 25%."));
+			.andExpect(jsonPath("$.fields.taxaJuros").value("Taxa simulada deve estar entre 5% e 25% para o cenário acadêmico."));
 
 		verifyNoInteractions(propostaService);
 	}
@@ -136,7 +136,7 @@ class PropostaControllerWebTest {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.message").value("Dados de entrada inv\u00E1lidos."))
-			.andExpect(jsonPath("$.fields.taxaJuros").value("Taxa de juros deve estar entre 5% e 25%."));
+			.andExpect(jsonPath("$.fields.taxaJuros").value("Taxa simulada deve estar entre 5% e 25% para o cenário acadêmico."));
 
 		verifyNoInteractions(propostaService);
 	}

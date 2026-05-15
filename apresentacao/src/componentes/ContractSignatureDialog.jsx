@@ -13,18 +13,18 @@ const methodOptions = [
   {
     value: 'CODIGO_ONE_TIME',
     icon: 'bell',
-    title: 'Codigo temporario',
-    description: 'Gere um codigo unico, entregue pela central de notificacoes, para confirmar a assinatura.'
+    title: 'Código temporário',
+    description: 'Gere um código único, entregue pela central de notificações, para confirmar a assinatura.'
   }
 ];
 
 function resolveCredentialLabel(method) {
-  return method === 'CODIGO_ONE_TIME' ? 'Codigo temporario' : 'Senha atual';
+  return method === 'CODIGO_ONE_TIME' ? 'Código temporário' : 'Senha atual';
 }
 
 function resolveCredentialPlaceholder(method) {
   return method === 'CODIGO_ONE_TIME'
-    ? 'Digite o codigo recebido na central de notificacoes'
+    ? 'Digite o código recebido na central de notificações'
     : 'Digite sua senha atual para concluir o aceite';
 }
 
@@ -96,11 +96,11 @@ export default function ContractSignatureDialog({
       >
         <header className="contract-signature-dialog-header">
           <div>
-            <span className="contract-detail-label">Assinatura eletronica protegida</span>
+            <span className="contract-detail-label">Assinatura eletrônica protegida</span>
             <h2 id="contract-signature-dialog-title">Confirmar aceite do contrato {contract.numeroContrato}</h2>
             <p className="helper-text">
-              O aceite final depende de um desafio curto. Revise o prazo, escolha o metodo e conclua a validacao antes da
-              expiracao.
+              O aceite final depende de um desafio curto. Revise o prazo, escolha o método e conclua a validação antes da
+              expiração.
             </p>
           </div>
 
@@ -113,14 +113,14 @@ export default function ContractSignatureDialog({
         <div className="contract-signature-dialog-meta">
           <span className="contract-signature-chip">
             <UiIcon name="clock" size={14} />
-            Prazo geral ate {formatDateTime(contract.dataExpiracaoAssinatura)}
+            Prazo geral até {formatDateTime(contract.dataExpiracaoAssinatura)}
           </span>
           <span className="contract-signature-chip">{formatLabel(contract.status)}</span>
-          {challengeExpiryLabel ? <span className="contract-signature-chip">Desafio ativo ate {challengeExpiryLabel}</span> : null}
+          {challengeExpiryLabel ? <span className="contract-signature-chip">Desafio ativo até {challengeExpiryLabel}</span> : null}
         </div>
 
         {!hasBankAccount ? (
-          <BankAccountNotice show message="Cadastre uma conta bancaria em Minha conta antes de iniciar ou concluir a assinatura." />
+          <BankAccountNotice show message="Cadastre uma conta bancária em Minha conta antes de iniciar ou concluir a assinatura." />
         ) : null}
 
         <label className="contract-signature-acceptance">
@@ -131,7 +131,7 @@ export default function ContractSignatureDialog({
             disabled={busy}
           />
           <span>
-            Confirmo que revisei o contrato e desejo registrar o aceite eletronico desta operacao no Loanflow.
+            Confirmo que revisei o contrato e desejo registrar o aceite eletrônico desta operação no LoanFlow.
           </span>
         </label>
 
@@ -159,7 +159,7 @@ export default function ContractSignatureDialog({
           <div className="contract-signature-head">
             <div>
               <span className="contract-detail-label">
-                {challenge?.desafioId ? 'Confirmacao final do aceite' : 'Etapa 1: iniciar desafio'}
+                {challenge?.desafioId ? 'Confirmação final do aceite' : 'Etapa 1: iniciar desafio'}
               </span>
               <strong>
                 {challenge?.desafioId
@@ -174,8 +174,8 @@ export default function ContractSignatureDialog({
             {challenge?.mensagem
               ? challenge.mensagem
               : selectedMethod.value === 'CODIGO_ONE_TIME'
-                ? 'Ao iniciar o desafio, um codigo temporario sera disponibilizado na central de notificacoes e associado ao destino mascarado do seu cadastro.'
-                : 'Ao iniciar o desafio, voce liberara a confirmacao final por senha dentro de alguns minutos.'}
+                ? 'Ao iniciar o desafio, um código temporário será disponibilizado na central de notificações e associado ao destino mascarado do seu cadastro.'
+                : 'Ao iniciar o desafio, você liberará a confirmação final por senha dentro de alguns minutos.'}
           </p>
 
           {destinationLabel ? (

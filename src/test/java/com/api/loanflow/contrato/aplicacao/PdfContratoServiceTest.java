@@ -31,7 +31,7 @@ class PdfContratoServiceTest {
 		var pdfBytes = service.lerPdf(pdfPath.toString());
 		var pdfText = new String(pdfBytes, PDF_CHARSET);
 		assertTrue(pdfText.startsWith("%PDF-1.4"));
-		assertTrue(pdfText.contains("MicrocrÃ©dito"));
+		assertTrue(pdfText.contains("Microcrédito"));
 		assertTrue(Pattern.compile("/Count\\s+[2-9]").matcher(pdfText).find());
 	}
 
@@ -49,17 +49,17 @@ class PdfContratoServiceTest {
 
 	private String criarConteudoExtenso() {
 		var conteudo = new StringBuilder()
-			.append("Contrato de MicrocrÃ©dito P2P - Instrumento Particular\n\n")
-			.append("NÃºmero do contrato: LF-TESTE\n")
-			.append("Data de emissÃ£o: 28/04/2026 18:00\n")
-			.append("Plataforma emissora: Loanflow\n\n")
-			.append("# 1. ClÃ¡usulas simuladas\n");
+			.append("Contrato de Microcrédito P2P - Instrumento Particular\n\n")
+			.append("Número do contrato: LF-TESTE\n")
+			.append("Data de emissão: 28/04/2026 18:00\n")
+			.append("Plataforma emissora: LoanFlow\n\n")
+			.append("# 1. Cláusulas simuladas\n");
 
 		for (int i = 1; i <= 90; i++) {
 			conteudo
-				.append("- ClÃ¡usula ")
+				.append("- Cláusula ")
 				.append(i)
-				.append(": esta Ã© uma descriÃ§Ã£o longa do contrato eletrÃ´nico com acentuaÃ§Ã£o vÃ¡lida, revisÃ£o visual e detalhes suficientes para forÃ§ar quebra de pÃ¡gina no PDF.\n");
+				.append(": esta é uma descrição longa do contrato eletrônico com acentuação válida, revisão visual e detalhes suficientes para forçar quebra de página no PDF.\n");
 		}
 
 		return conteudo.toString();

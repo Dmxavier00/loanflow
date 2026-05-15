@@ -14,6 +14,42 @@ const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
   timeStyle: 'short'
 });
 
+const labelWordReplacements = {
+  Analise: 'Análise',
+  Autenticacao: 'Autenticação',
+  Codigo: 'Código',
+  Credito: 'Crédito',
+  Descricao: 'Descrição',
+  Dividas: 'Dívidas',
+  Eletronica: 'Eletrônica',
+  Eletronico: 'Eletrônico',
+  Emissao: 'Emissão',
+  Endereco: 'Endereço',
+  Estavel: 'Estável',
+  Expiracao: 'Expiração',
+  Historico: 'Histórico',
+  Nao: 'Não',
+  Numero: 'Número',
+  Operacao: 'Operação',
+  Operacoes: 'Operações',
+  Orgao: 'Órgão',
+  Periodo: 'Período',
+  Poupanca: 'Poupança',
+  Proxima: 'Próxima',
+  Proximo: 'Próximo',
+  Quitacao: 'Quitação',
+  Reautenticacao: 'Reautenticação',
+  Saude: 'Saúde',
+  Ultimo: 'Último',
+  Ultimos: 'Últimos',
+  Uniao: 'União',
+  Usuario: 'Usuário',
+  Usuarios: 'Usuários',
+  Valido: 'Válido',
+  Visualizacao: 'Visualização',
+  Viuvo: 'Viúvo'
+};
+
 export function formatCurrency(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
     return '-';
@@ -43,7 +79,10 @@ export function formatLabel(value) {
     .toString()
     .toLowerCase()
     .replaceAll('_', ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .split(' ')
+    .map((word) => labelWordReplacements[word] ?? word)
+    .join(' ');
 }
 
 export function formatProposalHeadline(proposal) {

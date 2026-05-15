@@ -7,7 +7,7 @@ import SectionCard from '../componentes/SectionCard';
 import StatusBadge from '../componentes/StatusBadge';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
-import { formatCurrency, formatDate, formatLabel, formatProposalHeadline } from '../biblioteca/format';
+import { formatCurrency, formatDate, formatDateTime, formatLabel, formatProposalHeadline } from '../biblioteca/format';
 
 const interestRateOptions = Array.from({ length: 21 }, (_, index) => {
   const taxa = index + 5;
@@ -30,10 +30,10 @@ const installmentOptions = Array.from({ length: 12 }, (_, index) => {
 const purposeCategoryOptions = [
   { value: 'CAPITAL_DE_GIRO', label: 'Capital de giro' },
   { value: 'REFORMA', label: 'Reforma' },
-  { value: 'QUITACAO_DE_DIVIDAS', label: 'Quitacao de dividas' },
-  { value: 'EMERGENCIA', label: 'Emergencia' },
+  { value: 'QUITACAO_DE_DIVIDAS', label: 'Quitação de dívidas' },
+  { value: 'EMERGENCIA', label: 'Emergência' },
   { value: 'ESTUDO', label: 'Estudo' },
-  { value: 'SAUDE', label: 'Saude' },
+  { value: 'SAUDE', label: 'Saúde' },
   { value: 'OUTRA', label: 'Outra' }
 ];
 
@@ -71,6 +71,8 @@ const creditorOrderStatusOptions = [
 
 const editableStatuses = ['RASCUNHO', 'AGUARDANDO_ACEITE'];
 const cancelableStatuses = ['RASCUNHO', 'AGUARDANDO_ACEITE', 'SUBMETIDA', 'EM_ANALISE'];
+const simulationDisclaimer =
+  'Simulação acadêmica: os valores, percentuais e parcelas desta tela existem para demonstrar o fluxo do protótipo e não representam oferta pública de crédito nem validação jurídica da operação.';
 
 const normalizeInterestRate = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -79,6 +81,26 @@ const normalizeInterestRate = (value) => {
 
   const normalized = String(Number(value));
   return interestRateOptions.some((option) => option.value === normalized) ? normalized : '';
+};
+
+const getProposalPipelineLabel = (proposal) => {
+  if (proposal.credorId) {
+    return 'Em acompanhamento por um credor';
+  }
+
+  if (proposal.status === 'RASCUNHO') {
+    return 'Ainda não entrou na fila de aceite';
+  }
+
+  if (proposal.status === 'CANCELADA') {
+    return 'Encerrada antes do aceite';
+  }
+
+  if (proposal.status === 'EXPIRADA') {
+    return 'Prazo encerrado sem aceite';
+  }
+
+  return 'Disponível para aceite de um credor';
 };
 
 export default function PropostasPage() {
@@ -281,31 +303,35 @@ export default function PropostasPage() {
         show={(isSolicitante || isCredor) && !hasBankAccount}
         message={
           isCredor
-            ? 'Cadastre uma conta bancaria em Minha conta antes de aceitar propostas ou gerar contratos.'
-            : 'Cadastre uma conta bancaria em Minha conta antes de criar ou editar propostas.'
+            ? 'Cadastre uma conta bancária em Minha conta antes de aceitar propostas ou gerar contratos.'
+            : 'Cadastre uma conta bancária em Minha conta antes de criar ou editar propostas.'
         }
       />
 
       {isSolicitante ? (
         <SectionCard
+          className="proposal-entry-card"
           title={editingId ? `Editar proposta #${editingId}` : 'Nova proposta'}
-          subtitle="Crie uma proposta sem escolher credor. A validade e automatica por 7 dias e a proposta entra na fila aguardando aceite."
+          subtitle="Crie uma proposta simulada sem escolher credor. A validade é automática por 7 dias e a proposta entra na fila aguardando aceite."
         >
-          <form className="form-grid" onSubmit={handleSaveProposal}>
-            <label>
+          <form className="form-grid compact-proposal-form" onSubmit={handleSaveProposal}>
+            <label className="proposal-field-amount">
               Valor solicitado
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                name="valorSolicitado"
-                value={form.valorSolicitado}
-                onChange={handleFormChange}
-                required
-              />
+              <div className="currency-input-shell">
+                <span aria-hidden="true">R$</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  name="valorSolicitado"
+                  value={form.valorSolicitado}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
             </label>
-            <label>
-              Taxa de juros
+            <label className="proposal-field-rate">
+              Taxa simulada
               <select
                 name="taxaJuros"
                 value={form.taxaJuros}
@@ -322,7 +348,7 @@ export default function PropostasPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="proposal-field-term">
               Parcelas
               <select
                 name="prazoMeses"
@@ -337,7 +363,7 @@ export default function PropostasPage() {
                 ))}
               </select>
             </label>
-            <label>
+            <label className="proposal-field-category">
               Categoria
               <select
                 name="categoriaFinalidade"
@@ -352,7 +378,7 @@ export default function PropostasPage() {
                 ))}
               </select>
             </label>
-            <label className="form-span-2">
+            <label className="form-span-2 proposal-field-split proposal-field-summary">
               Resumo do pedido
               <input
                 type="text"
@@ -363,21 +389,24 @@ export default function PropostasPage() {
                 required
               />
             </label>
-            <label className="form-span-2">
-              Descricao detalhada
+            <label className="form-span-2 proposal-field-split proposal-field-details">
+              Descrição detalhada
               <textarea
                 name="descricaoDetalhada"
-                rows="4"
+                rows="2"
                 value={form.descricaoDetalhada}
                 onChange={handleFormChange}
                 maxLength="2000"
                 required
               />
             </label>
+            <p className="helper-text form-span-2">
+              {simulationDisclaimer}
+            </p>
 
             <div className="form-actions form-span-2">
               <button type="submit" className="primary-button" disabled={!hasBankAccount}>
-                {editingId ? 'Salvar alteracoes' : 'Criar proposta'}
+                {editingId ? 'Salvar alterações' : 'Criar proposta'}
               </button>
               <button type="button" className="danger-button" onClick={resetForm}>
                 Limpar dados
@@ -385,14 +414,17 @@ export default function PropostasPage() {
               {proposalBeingEdited ? <StatusBadge value={proposalBeingEdited.status} /> : null}
             </div>
             <p className="helper-text form-span-2">
-              A expiracao da proposta e renovada automaticamente por 7 dias sempre que ela for criada ou editada.
+              A expiração da proposta é renovada automaticamente por 7 dias sempre que ela for criada ou editada.
             </p>
           </form>
         </SectionCard>
       ) : null}
 
       {isSolicitante ? (
-        <SectionCard title="Minhas propostas" subtitle="Acompanhe suas propostas abertas, aceitas e encerradas.">
+        <SectionCard
+          title="Minhas propostas"
+          subtitle="Acompanhe suas propostas simuladas abertas, aceitas e encerradas."
+        >
           {loading ? (
             <p className="helper-text">Carregando propostas...</p>
           ) : myProposals.length ? (
@@ -400,41 +432,73 @@ export default function PropostasPage() {
               {myProposals.map((proposal) => (
                 <article
                   key={proposal.id}
-                  className={`list-card${highlightedId === proposal.id ? ' list-card-highlight' : ''}`}
+                  className={`borrower-proposal-card${highlightedId === proposal.id ? ' is-highlighted' : ''}`}
                 >
-                  <div>
-                    <strong>Proposta #{proposal.id}</strong>
-                    <p>{proposal.finalidade}</p>
-                    <small>
-                      {formatLabel(proposal.categoriaFinalidade)} | {formatCurrency(proposal.valorSolicitado)} | Expira em{' '}
-                      {formatDate(proposal.dataExpiracao)}
-                    </small>
-                  </div>
-                  <div className="stack-actions">
-                    <StatusBadge value={proposal.status} />
-                    <div className="inline-button-group">
-                      {editableStatuses.includes(proposal.status) ? (
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => populateFormForEdit(proposal)}
-                          disabled={!hasBankAccount}
-                        >
-                          Editar
-                        </button>
-                      ) : null}
+                  <div className="borrower-proposal-card-head">
+                    <div className="borrower-proposal-card-copy">
+                      <div className="borrower-proposal-card-topline">
+                        <span className="borrower-proposal-card-id">Proposta #{proposal.id}</span>
+                        <span className="borrower-proposal-card-pipeline">{getProposalPipelineLabel(proposal)}</span>
+                      </div>
+                      <h3>{proposal.finalidade}</h3>
+                      <p>{proposal.descricaoDetalhada}</p>
+                    </div>
+                    <div className="borrower-proposal-card-actions">
+                      <StatusBadge value={proposal.status} />
+                      <div className="inline-button-group">
+                        {editableStatuses.includes(proposal.status) ? (
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => populateFormForEdit(proposal)}
+                            disabled={!hasBankAccount}
+                          >
+                            Editar
+                          </button>
+                        ) : null}
 
-                      {cancelableStatuses.includes(proposal.status) ? (
-                        <button
-                          type="button"
-                          className="danger-button"
-                          onClick={() => runAction(() => api.cancelProposal(token, proposal.id), 'Proposta cancelada.')}
-                        >
-                          Cancelar
-                        </button>
-                      ) : null}
+                        {cancelableStatuses.includes(proposal.status) ? (
+                          <button
+                            type="button"
+                            className="danger-button"
+                            onClick={() => runAction(() => api.cancelProposal(token, proposal.id), 'Proposta cancelada.')}
+                          >
+                            Cancelar
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+                  <dl className="borrower-proposal-detail-grid">
+                    <div>
+                      <dt>Categoria</dt>
+                      <dd>{formatLabel(proposal.categoriaFinalidade)}</dd>
+                    </div>
+                    <div>
+                      <dt>Valor solicitado</dt>
+                      <dd>{formatCurrency(proposal.valorSolicitado)}</dd>
+                    </div>
+                    <div>
+                      <dt>Taxa simulada</dt>
+                      <dd>{proposal.taxaJuros}%</dd>
+                    </div>
+                    <div>
+                      <dt>Prazo</dt>
+                      <dd>{proposal.prazoMeses} meses</dd>
+                    </div>
+                    <div>
+                      <dt>Criada em</dt>
+                      <dd>{formatDateTime(proposal.dataCriacao)}</dd>
+                    </div>
+                    <div>
+                      <dt>Expira em</dt>
+                      <dd>{formatDate(proposal.dataExpiracao)}</dd>
+                    </div>
+                    <div className="borrower-proposal-detail-wide">
+                      <dt>Fluxo atual</dt>
+                      <dd>{getProposalPipelineLabel(proposal)}</dd>
+                    </div>
+                  </dl>
                 </article>
               ))}
             </div>
@@ -450,7 +514,7 @@ export default function PropostasPage() {
       {isCredor ? (
         <SectionCard
           title="Ativos do credor"
-          subtitle="Aqui voce acompanha a fila de aceite e as propostas que ja estao na sua carteira."
+          subtitle="Aqui você acompanha a fila de aceite e as propostas simuladas que já estão na sua carteira."
         >
           <div className="metrics-grid metrics-grid-compact">
             <article className="metric-card metric-card-compact metric-gold">
@@ -458,7 +522,7 @@ export default function PropostasPage() {
               <strong>{pendingProposals.length}</strong>
             </article>
             <article className="metric-card metric-card-compact metric-green">
-              <span>Ja aceitas</span>
+              <span>Já aceitas</span>
               <strong>{acceptedProposals.length}</strong>
             </article>
           </div>
@@ -468,7 +532,7 @@ export default function PropostasPage() {
       {isCredor ? (
         <SectionCard
           title="Ordens aguardando aceite"
-          subtitle="Selecione uma proposta aberta para assumir a operacao como credor."
+          subtitle="Selecione uma proposta aberta para assumir a operação simulada como credor."
         >
           <div className="filters-row">
             <label>
@@ -506,7 +570,7 @@ export default function PropostasPage() {
                 name="finalidade"
                 value={creditorOrderFilters.finalidade}
                 onChange={handleCreditorOrderFilterChange}
-                placeholder="Resumo ou descricao"
+                placeholder="Resumo ou descrição"
               />
             </label>
           </div>
@@ -560,8 +624,8 @@ export default function PropostasPage() {
               }
               description={
                 pendingProposals.length
-                  ? 'Ajuste os filtros para visualizar outras ordens disponiveis.'
-                  : 'Quando um solicitante criar uma proposta, ela aparecera aqui para os credores.'
+                  ? 'Ajuste os filtros para visualizar outras ordens disponíveis.'
+                  : 'Quando um solicitante criar uma proposta, ela aparecerá aqui para os credores.'
               }
             />
           )}
@@ -571,7 +635,7 @@ export default function PropostasPage() {
       {isCredor ? (
         <SectionCard
           title="Ordem selecionada"
-          subtitle="Confira os dados antes de aceitar a proposta."
+          subtitle="Confira os dados da simulação antes de aceitar a proposta."
           actions={
             <button
               type="button"
@@ -583,6 +647,7 @@ export default function PropostasPage() {
             </button>
           }
         >
+          <p className="helper-text">{simulationDisclaimer}</p>
           {selectedProposal ? (
             <dl className="detail-grid">
               <div>
@@ -590,7 +655,7 @@ export default function PropostasPage() {
                 <dd>{formatProposalHeadline(selectedProposal)}</dd>
               </div>
               <div>
-                <dt>Codigo</dt>
+                <dt>Código</dt>
                 <dd>#{selectedProposal.id}</dd>
               </div>
               <div>
@@ -604,7 +669,7 @@ export default function PropostasPage() {
                 <dd>{formatCurrency(selectedProposal.valorSolicitado)}</dd>
               </div>
               <div>
-                <dt>Taxa de juros</dt>
+                <dt>Taxa simulada</dt>
                 <dd>{selectedProposal.taxaJuros}%</dd>
               </div>
               <div>
@@ -612,7 +677,7 @@ export default function PropostasPage() {
                 <dd>{selectedProposal.prazoMeses} meses</dd>
               </div>
               <div>
-                <dt>Expiracao</dt>
+                <dt>Expiração</dt>
                 <dd>{formatDate(selectedProposal.dataExpiracao)}</dd>
               </div>
               <div>
@@ -624,7 +689,7 @@ export default function PropostasPage() {
                 <dd>{selectedProposal.finalidade}</dd>
               </div>
               <div className="detail-span-2">
-                <dt>Descricao detalhada</dt>
+                <dt>Descrição detalhada</dt>
                 <dd>{selectedProposal.descricaoDetalhada}</dd>
               </div>
             </dl>
@@ -638,7 +703,10 @@ export default function PropostasPage() {
       ) : null}
 
       {isCredor ? (
-        <SectionCard title="Propostas aceitas por voce" subtitle="Historico das propostas ja assumidas pelo seu credor.">
+        <SectionCard
+          title="Propostas aceitas por você"
+          subtitle="Histórico das propostas simuladas já assumidas pelo seu credor."
+        >
           {loading ? (
             <p className="helper-text">Carregando propostas aceitas...</p>
           ) : acceptedProposals.length ? (
@@ -671,8 +739,8 @@ export default function PropostasPage() {
             </div>
           ) : (
             <EmptyState
-              title="Voce ainda nao aceitou propostas."
-              description="As propostas aceitas nesta tela aparecerao aqui."
+              title="Você ainda não aceitou propostas."
+              description="As propostas aceitas nesta tela aparecerão aqui."
             />
           )}
         </SectionCard>

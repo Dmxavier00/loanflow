@@ -91,7 +91,7 @@ public class AssinaturaDesafioService {
 			notificacaoService.criar(
 				usuario,
 				TipoNotificacao.SISTEMA,
-				"Codigo temporario para assinatura do contrato %s: %s. Valido ate %s."
+				"Código temporário para assinatura do contrato %s: %s. Válido até %s."
 					.formatted(
 						contrato.getNumeroContrato(),
 						codigoTemporario,
@@ -124,9 +124,9 @@ public class AssinaturaDesafioService {
 		String userAgent
 	) {
 		var desafio = desafioAssinaturaRepository.findByIdAndUsuarioId(desafioId, usuario.getId())
-			.orElseThrow(() -> new RegraNegocioException("Desafio de assinatura invalido."));
+			.orElseThrow(() -> new RegraNegocioException("Desafio de assinatura inválido."));
 		if (!desafio.getContrato().getId().equals(contrato.getId())) {
-			throw new RegraNegocioException("Desafio de assinatura invalido.");
+			throw new RegraNegocioException("Desafio de assinatura inválido.");
 		}
 
 		var agora = LocalDateTime.now();
@@ -137,16 +137,16 @@ public class AssinaturaDesafioService {
 					contrato,
 					usuario,
 					EventoAssinaturaTipo.DESAFIO_EXPIRADO,
-					"Desafio de assinatura expirou antes da confirmacao final.",
+					"Desafio de assinatura expirou antes da confirmação final.",
 					ipOrigem,
 					userAgent
 				);
 			}
-			throw new RegraNegocioException("Desafio de assinatura expirado. Gere uma nova validacao para continuar.");
+			throw new RegraNegocioException("Desafio de assinatura expirado. Gere uma nova validação para continuar.");
 		}
 
 		if (desafio.getStatus() == DesafioAssinaturaStatus.CONSUMIDO || desafio.getStatus() == DesafioAssinaturaStatus.CANCELADO) {
-			throw new RegraNegocioException("Desafio de assinatura ja foi utilizado ou nao esta mais valido.");
+			throw new RegraNegocioException("Desafio de assinatura já foi utilizado ou não está mais válido.");
 		}
 
 		if (desafio.getStatus() == DesafioAssinaturaStatus.VALIDADO) {
@@ -159,11 +159,11 @@ public class AssinaturaDesafioService {
 				contrato,
 				usuario,
 				EventoAssinaturaTipo.ASSINATURA_RECUSADA,
-				"Codigo ou senha informados nao conferem com o desafio de assinatura.",
+				"Código ou senha informados não conferem com o desafio de assinatura.",
 				ipOrigem,
 				userAgent
 			);
-			throw new RegraNegocioException("Codigo ou senha invalidos para confirmar a assinatura.");
+			throw new RegraNegocioException("Código ou senha inválidos para confirmar a assinatura.");
 		}
 
 		desafio.marcarValidado(agora);
@@ -208,7 +208,7 @@ public class AssinaturaDesafioService {
 				contrato,
 				usuario,
 				EventoAssinaturaTipo.DESAFIO_EXPIRADO,
-				"Desafio de assinatura expirou antes da confirmacao final.",
+				"Desafio de assinatura expirou antes da confirmação final.",
 				ipOrigem,
 				userAgent
 			);
@@ -233,10 +233,10 @@ public class AssinaturaDesafioService {
 
 	private void validarMetodoDisponivel(MetodoAutenticacaoAssinatura metodo) {
 		if (metodo == null) {
-			throw new RegraNegocioException("Metodo de autenticacao obrigatorio para iniciar a assinatura.");
+			throw new RegraNegocioException("Método de autenticação obrigatório para iniciar a assinatura.");
 		}
 		if (metodo == MetodoAutenticacaoAssinatura.ACEITE_WEB_AUTENTICADO) {
-			throw new RegraNegocioException("O metodo selecionado nao esta disponivel para o desafio de assinatura.");
+			throw new RegraNegocioException("O método selecionado não está disponível para o desafio de assinatura.");
 		}
 	}
 
@@ -273,11 +273,11 @@ public class AssinaturaDesafioService {
 
 	private String montarDetalheInicio(MetodoAutenticacaoAssinatura metodo, String mascaraDestino) {
 		if (metodo == MetodoAutenticacaoAssinatura.CODIGO_ONE_TIME && mascaraDestino != null && !mascaraDestino.isBlank()) {
-			return "Desafio de assinatura iniciado com codigo temporario enviado ao destino mascarado " + mascaraDestino + ".";
+			return "Desafio de assinatura iniciado com código temporário enviado ao destino mascarado " + mascaraDestino + ".";
 		}
 		if (metodo == MetodoAutenticacaoAssinatura.CODIGO_ONE_TIME) {
-			return "Desafio de assinatura iniciado com codigo temporario.";
+			return "Desafio de assinatura iniciado com código temporário.";
 		}
-		return "Desafio de assinatura iniciado com reautenticacao por senha.";
+		return "Desafio de assinatura iniciado com reautenticação por senha.";
 	}
 }
