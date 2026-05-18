@@ -2337,12 +2337,78 @@ textarea:focus-visible {
 }
 
 .contract-page {
+  --contract-tone-rgb: var(--accent-rgb);
   gap: 24px;
+}
+
+.contract-page-header {
+  max-width: 760px;
+}
+
+.contract-page-vertical {
+  gap: 20px;
 }
 
 .contracts-feedback-stack {
   display: grid;
   gap: 12px;
+}
+
+.contract-detail-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.contract-summary-board {
+  padding: clamp(24px, 3vw, 32px);
+  display: grid;
+  gap: 18px;
+  border-radius: 28px;
+  border: 1px solid rgba(var(--contract-tone-rgb), 0.18);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(var(--contract-tone-rgb), 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(243, 248, 255, 0.96));
+  box-shadow: 0 24px 56px rgba(50, 83, 160, 0.12);
+}
+
+.contract-summary-board-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.contract-summary-board-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.contract-summary-board-copy h2 {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+}
+
+.contract-summary-board-copy p {
+  max-width: 66ch;
+  margin: 0;
+  color: var(--muted-strong);
+}
+
+.contract-summary-board .contract-command-actions {
+  margin-top: 2px;
+}
+
+.contract-detail-grid dd {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.contract-signature-readonly {
+  display: grid;
+  gap: 16px;
 }
 
 .contracts-hero {
@@ -3052,6 +3118,19 @@ textarea:focus-visible {
 }
 
 @media (max-width: 760px) {
+  .contract-summary-board {
+    padding: 24px;
+    border-radius: 22px;
+  }
+
+  .contract-summary-board-header {
+    display: grid;
+  }
+
+  .contract-summary-board-copy h2 {
+    font-size: clamp(1.95rem, 10vw, 2.8rem);
+  }
+
   .contracts-hero,
   .contract-command-board,
   .contracts-hero-stat,

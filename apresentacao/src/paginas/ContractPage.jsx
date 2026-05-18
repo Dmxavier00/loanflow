@@ -80,7 +80,7 @@ function formatDueLabel(value) {
   }
 
   if (daysUntil === 1) {
-    return 'Vence amanhã';
+    return 'Vence amanha';
   }
 
   if (daysUntil > 1) {
@@ -91,7 +91,7 @@ function formatDueLabel(value) {
     return 'Venceu ontem';
   }
 
-  return `Venceu há ${Math.abs(daysUntil)} dias`;
+  return `Venceu ha ${Math.abs(daysUntil)} dias`;
 }
 
 function getContractStatusTone(status) {
@@ -128,7 +128,7 @@ function getInstallmentPill(installment) {
   }
 
   if ((getDaysUntil(installment.dataVencimento) ?? 999) <= 3) {
-    return { label: 'Próxima da data', tone: 'warning' };
+    return { label: 'Proxima da data', tone: 'warning' };
   }
 
   return { label: 'Programada', tone: 'info' };
@@ -136,15 +136,15 @@ function getInstallmentPill(installment) {
 
 function getContractStatusSummary(contract) {
   if (!contract) {
-    return 'Selecione um contrato para abrir o painel operacional.';
+    return 'Selecione um contrato para abrir os detalhes operacionais.';
   }
 
   if (contract.status === 'FORMALIZADO') {
-    return 'Contrato formalizado com sucesso. O foco agora passa a ser a execução financeira e a leitura das parcelas.';
+    return 'Contrato formalizado com sucesso. O foco agora passa a ser a agenda financeira e a leitura das parcelas.';
   }
 
   if (contract.status === 'CANCELADO') {
-    return 'Fluxo encerrado antes da formalização. O documento segue disponível para rastreabilidade e auditoria.';
+    return 'Fluxo encerrado antes da formalizacao. O documento segue disponivel para consulta e rastreabilidade.';
   }
 
   if (contract.status === 'EXPIRADO') {
@@ -152,11 +152,11 @@ function getContractStatusSummary(contract) {
   }
 
   if (contract.status === 'ASSINADO_PARCIALMENTE') {
-    return 'Uma assinatura já foi registrada. Falta concluir o aceite do signatário restante para formalizar o contrato.';
+    return 'Uma assinatura ja foi registrada. Falta concluir o aceite restante para formalizar o contrato.';
   }
 
   if (contract.status === 'AGUARDANDO_ASSINATURAS') {
-    return 'Contrato emitido e pronto para coleta de aceite eletrônico. A próxima ação destrava a formalização.';
+    return 'Contrato emitido e pronto para coleta de aceite eletronico.';
   }
 
   return 'Contrato em acompanhamento no fluxo operacional da plataforma.';
@@ -189,7 +189,7 @@ function getContractNextStep(contract, installmentOverview) {
     return 'Fluxo encerrado';
   }
 
-    return 'Monitorar evolução do contrato';
+  return 'Monitorar evolucao do contrato';
 }
 
 function getPermissionSummary({ selectedContract, canSignSelected, canCancelSelected, hasBankAccount }) {
@@ -198,15 +198,15 @@ function getPermissionSummary({ selectedContract, canSignSelected, canCancelSele
   }
 
   if (canSignSelected && !hasBankAccount) {
-    return 'O aceite está disponível, mas a conta bancária precisa ser cadastrada antes da assinatura.';
+    return 'O aceite esta disponivel, mas a conta bancaria precisa ser cadastrada antes da assinatura.';
   }
 
   if (canSignSelected && canCancelSelected) {
-    return 'Seu perfil pode reautenticar, assinar o documento ou encerrar o fluxo antes da formalização.';
+    return 'Seu perfil pode reautenticar, assinar o documento ou encerrar o fluxo antes da formalizacao.';
   }
 
   if (canSignSelected) {
-    return 'Sua assinatura é a próxima ação esperada para este contrato.';
+    return 'Sua assinatura e a proxima acao esperada para este contrato.';
   }
 
   if (canCancelSelected) {
@@ -214,135 +214,23 @@ function getPermissionSummary({ selectedContract, canSignSelected, canCancelSele
   }
 
   if (selectedContract.status === 'FORMALIZADO') {
-    return 'Nenhuma ação contratual pendente. O acompanhamento segue na agenda de parcelas.';
+    return 'Nenhuma acao contratual pendente. O acompanhamento segue na agenda de parcelas.';
   }
 
   if (selectedContract.status === 'EXPIRADO') {
-    return selectedContract.motivoExpiracao || 'O contrato expirou e agora fica disponível apenas para consulta ou encerramento.';
+    return selectedContract.motivoExpiracao || 'O contrato expirou e agora fica disponivel apenas para consulta.';
   }
 
   if (selectedContract.status === 'CANCELADO') {
-    return 'Contrato disponível apenas para leitura e histórico.';
+    return 'Contrato disponivel apenas para leitura e historico.';
   }
 
-  return 'Não há operações liberadas para o seu perfil neste momento.';
-}
-
-function buildFlowSteps(contract, installmentOverview) {
-  if (!contract) {
-    return [];
-  }
-
-  const generatedStep = {
-    key: 'emissao',
-    title: 'Emissão',
-    state: 'complete',
-    description: `Documento gerado em ${formatDateTime(contract.dataGeracao)}.`
-  };
-
-  if (contract.status === 'CANCELADO') {
-    return [
-      generatedStep,
-      {
-        key: 'assinaturas',
-        title: 'Assinaturas',
-        state: 'blocked',
-        description: 'Fluxo interrompido antes da conclusão dos aceites.'
-      },
-      {
-        key: 'formalizacao',
-        title: 'Formalização',
-        state: 'blocked',
-        description: 'O contrato foi encerrado e não seguirá para formalização.'
-      },
-      {
-        key: 'carteira',
-        title: 'Carteira',
-        state: 'blocked',
-        description: 'Sem agenda financeira ativa para este contrato.'
-      }
-    ];
-  }
-
-  if (contract.status === 'EXPIRADO') {
-    return [
-      generatedStep,
-      {
-        key: 'assinaturas',
-        title: 'Assinaturas',
-        state: 'blocked',
-        description: contract.motivoExpiracao || 'O prazo de assinatura foi encerrado antes da conclusão dos aceites.'
-      },
-      {
-        key: 'formalizacao',
-        title: 'Formalização',
-        state: 'blocked',
-        description: 'A formalização foi bloqueada porque o contrato não recebeu todos os aceites no prazo.'
-      },
-      {
-        key: 'carteira',
-        title: 'Carteira',
-        state: 'blocked',
-        description: 'Sem agenda financeira ativa para este contrato expirado.'
-      }
-    ];
-  }
-
-  if (contract.status === 'FORMALIZADO') {
-    return [
-      generatedStep,
-      {
-        key: 'assinaturas',
-        title: 'Assinaturas',
-        state: 'complete',
-        description: 'Todos os aceites eletronicos foram concluidos.'
-      },
-      {
-        key: 'formalizacao',
-        title: 'Formalização',
-        state: 'complete',
-        description: `Contrato formalizado em ${formatDateTime(contract.dataFormalizacao)}.`
-      },
-      {
-        key: 'carteira',
-        title: 'Carteira',
-        state: installmentOverview.total ? 'active' : 'upcoming',
-        description: installmentOverview.total
-          ? `${installmentOverview.total} parcela(s) no cronograma e ${installmentOverview.open} em aberto.`
-          : 'Cronograma financeiro ainda não carregado.'
-      }
-    ];
-  }
-
-  return [
-    generatedStep,
-    {
-      key: 'assinaturas',
-      title: 'Assinaturas',
-      state: 'active',
-      description:
-        contract.status === 'ASSINADO_PARCIALMENTE'
-          ? 'Uma assinatura foi concluída. Falta registrar o aceite restante.'
-          : 'O documento está pronto para iniciar a coleta de assinaturas.'
-    },
-    {
-      key: 'formalizacao',
-      title: 'Formalização',
-      state: 'upcoming',
-      description: 'A formalização será liberada assim que o fluxo de aceites terminar.'
-    },
-    {
-      key: 'carteira',
-      title: 'Carteira',
-      state: 'upcoming',
-      description: 'As parcelas serão acompanhadas aqui quando o contrato for formalizado.'
-    }
-  ];
+  return 'Nao ha operacoes liberadas para o seu perfil neste momento.';
 }
 
 function getPdfFileName(pdfPath) {
   if (!pdfPath) {
-    return 'PDF não disponível';
+    return 'PDF nao disponivel';
   }
 
   const normalizedSegments = pdfPath.split(/[\\/]/);
@@ -418,46 +306,6 @@ export default function ContractPage() {
     };
   }, [selectedContract?.id, token]);
 
-  const contractSummaryCards = useMemo(() => {
-    const awaitingSignature = contracts.filter((contract) => signatureStatuses.includes(contract.status)).length;
-    const formalized = contracts.filter((contract) => contract.status === 'FORMALIZADO').length;
-    const actionable = contracts.filter((contract) => {
-      const canSignContract = canSign && hasBankAccount && signatureStatuses.includes(contract.status);
-      const canCancelContract = canCancel && !['FORMALIZADO', 'CANCELADO'].includes(contract.status);
-      return canSignContract || canCancelContract;
-    }).length;
-
-    return [
-      {
-        label: 'Carteira visivel',
-        value: contracts.length,
-        helper: contracts.length === 1 ? '1 contrato disponível agora' : `${contracts.length} contratos disponíveis agora`,
-        icon: 'wallet'
-      },
-      {
-        label: 'Em assinatura',
-        value: awaitingSignature,
-        helper:
-          awaitingSignature === 1
-            ? '1 contrato aguardando aceite'
-            : `${awaitingSignature} contratos aguardando aceite`,
-        icon: 'signature'
-      },
-      {
-        label: 'Formalizados',
-        value: formalized,
-        helper: formalized === 1 ? '1 contrato pronto para carteira' : `${formalized} contratos prontos para carteira`,
-        icon: 'file-check'
-      },
-      {
-        label: 'Acao imediata',
-        value: actionable,
-        helper: actionable === 1 ? '1 contrato permite operação agora' : `${actionable} contratos permitem operação agora`,
-        icon: 'clock'
-      }
-    ];
-  }, [canCancel, canSign, contracts, hasBankAccount]);
-
   const installmentOverview = useMemo(() => {
     const paid = contractInstallments.filter((installment) => installment.status === 'PAGA');
     const overdue = contractInstallments.filter((installment) => installment.status === 'EM_ATRASO');
@@ -492,7 +340,7 @@ export default function ContractPage() {
   const activeFilterCount = Object.values(filters).filter((value) => String(value || '').trim()).length;
   const activeFilterLabel = activeFilterCount
     ? `${activeFilterCount} filtro${activeFilterCount === 1 ? '' : 's'} ativo${activeFilterCount === 1 ? '' : 's'}`
-    : 'Visão completa';
+    : 'Visao completa';
   const nextStepLabel = getContractNextStep(selectedContract, installmentOverview);
   const permissionSummary = getPermissionSummary({
     selectedContract,
@@ -500,7 +348,6 @@ export default function ContractPage() {
     canCancelSelected,
     hasBankAccount
   });
-  const flowSteps = buildFlowSteps(selectedContract, installmentOverview);
   const selectedContractPurpose =
     selectedContract?.finalidade || 'Contrato gerado na plataforma para continuidade do fluxo operacional.';
   const selectedContractExpiryLabel = selectedContract?.dataExpiracaoAssinatura
@@ -733,412 +580,384 @@ export default function ContractPage() {
   };
 
   return (
-    <div className="page-stack contract-page">
-      <section className="contracts-hero">
-        <div className="contracts-hero-copy">
-          <span className="contracts-hero-kicker">Contratos</span>
-          <h1>Uma carteira mais simples para acompanhar assinatura, documento e parcelas.</h1>
-          <p>Filtre a lista, abra um contrato e resolva o que importa sem repetir a mesma informação em vários blocos.</p>
-        </div>
-
-        <div className="contracts-hero-stats">
-          {contractSummaryCards.map((item) => (
-            <article key={item.label} className="contracts-hero-stat">
-              <div className="contracts-hero-stat-top">
-                <span className="contracts-hero-stat-icon">
-                  <UiIcon name={item.icon} size={18} />
-                </span>
-                <span className="contracts-hero-stat-label">{item.label}</span>
-              </div>
-              <div className="contracts-hero-stat-copy">
-                <strong>{item.value}</strong>
-                <p>{item.helper}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+    <div className="page-stack contract-page contract-page-vertical">
+      <header className="account-page-header contract-page-header">
+        <h1>Contratos</h1>
+        <p>Busque um contrato, confira o status e resolva a proxima acao sem trocar de contexto.</p>
+      </header>
 
       <div className="contracts-feedback-stack">
         <MessageBanner type="error">{error}</MessageBanner>
         <MessageBanner type="success">{feedback}</MessageBanner>
         <BankAccountNotice
           show={canSign && !hasBankAccount}
-          message="Cadastre uma conta bancária no painel antes de assinar contratos."
+          message="Cadastre uma conta bancaria no painel antes de assinar contratos."
         />
       </div>
 
-      <div className="contracts-workspace">
-        <aside className="contracts-rail">
-          <SectionCard
-            title="Filtros"
-            subtitle="Refine a carteira e monte uma fila mais objetiva."
-            actions={<span className="contract-utility-badge">{activeFilterLabel}</span>}
-          >
-            <div className="contract-filter-stack">
-              <label>
-                Número do contrato
-                <input
-                  name="numeroContrato"
-                  value={filters.numeroContrato}
-                  onChange={handleFilterChange}
-                  placeholder="Ex.: LF-123"
-                />
-              </label>
-              <label>
-                Status
-                <select name="status" value={filters.status} onChange={handleFilterChange}>
-                  {statusOptions.map((status) => (
-                    <option key={status || 'all'} value={status}>
-                      {status ? formatLabel(status) : 'Todos'}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Finalidade
-                <input
-                  name="finalidade"
-                  value={filters.finalidade}
-                  onChange={handleFilterChange}
-                  placeholder="Ex.: capital de giro"
-                />
-              </label>
+      <SectionCard
+        title="Filtros"
+        subtitle="Refine a carteira por numero, status ou finalidade."
+        actions={<span className="contract-utility-badge">{activeFilterLabel}</span>}
+      >
+        <div className="contract-filter-stack">
+          <label>
+            Numero do contrato
+            <input
+              name="numeroContrato"
+              value={filters.numeroContrato}
+              onChange={handleFilterChange}
+              placeholder="Ex.: LF-123"
+            />
+          </label>
+          <label>
+            Status
+            <select name="status" value={filters.status} onChange={handleFilterChange}>
+              {statusOptions.map((status) => (
+                <option key={status || 'all'} value={status}>
+                  {status ? formatLabel(status) : 'Todos'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Finalidade
+            <input
+              name="finalidade"
+              value={filters.finalidade}
+              onChange={handleFilterChange}
+              placeholder="Ex.: capital de giro"
+            />
+          </label>
+        </div>
+        <div className="form-actions contract-filter-actions">
+          <button type="button" className="primary-button" onClick={() => loadContracts(filters, selectedContractId)}>
+            <UiIcon name="stack" size={16} />
+            {loading ? 'Carregando...' : 'Atualizar lista'}
+          </button>
+          <button type="button" className="secondary-button" onClick={handleResetFilters}>
+            Limpar filtros
+          </button>
+        </div>
+        <p className="helper-text contract-filter-note">
+          {loading ? 'Atualizando a lista de contratos agora.' : 'A mesma filtragem alimenta a lista e o detalhe abaixo.'}
+        </p>
+      </SectionCard>
+
+      <SectionCard
+        title="Contratos"
+        subtitle="Selecione um item para abrir os detalhes abaixo."
+        actions={<span className="contract-utility-badge">{contracts.length} item(ns)</span>}
+      >
+        {loading && !contracts.length ? (
+          <p className="helper-text">Carregando contratos...</p>
+        ) : contracts.length ? (
+          <div className="list-stack contract-list-stack">
+            {contracts.map((contract) => (
+              <article
+                key={contract.id}
+                className={`list-card contract-list-card${
+                  selectedContractId === contract.id ? ' list-card-highlight contract-list-card-active' : ''
+                }`}
+              >
+                <div className="contract-list-card-main">
+                  <div className="contract-list-card-topline">
+                    <strong>{contract.numeroContrato}</strong>
+                    <StatusBadge value={contract.status} />
+                  </div>
+                  <p className="contract-list-card-purpose">
+                    {contract.finalidade || 'Sem finalidade informada para este contrato.'}
+                  </p>
+                  <div className="contract-list-card-meta">
+                    <span>
+                      <UiIcon name="file" size={15} />
+                      Proposta #{contract.propostaId}
+                    </span>
+                    <span>
+                      <UiIcon name="clock" size={15} />
+                      {contract.dataFormalizacao
+                        ? `Formalizado em ${formatDateTime(contract.dataFormalizacao)}`
+                        : `Gerado em ${formatDateTime(contract.dataGeracao)}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="stack-actions contract-list-card-actions">
+                  <button
+                    type="button"
+                    className={selectedContractId === contract.id ? 'primary-button' : 'secondary-button'}
+                    onClick={() => handleSelectContract(contract.id)}
+                  >
+                    {selectedContractId === contract.id ? 'Selecionado' : 'Abrir'}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Nenhum contrato encontrado."
+            description="Ajuste os filtros para localizar contratos vinculados ao seu perfil."
+          />
+        )}
+      </SectionCard>
+
+      {selectedContract ? (
+        <div className="contract-detail-stack">
+          <section className={`contract-summary-board contract-tone-${selectedContractTone}`}>
+            <div className="contract-summary-board-header">
+              <div className="contract-summary-board-copy">
+                <span className="contract-detail-label">Contrato selecionado</span>
+                <h2>{selectedContract.numeroContrato}</h2>
+                <p>{selectedContractPurpose}</p>
+              </div>
+              <StatusBadge value={selectedContract.status} />
             </div>
-            <div className="form-actions contract-filter-actions">
-              <button type="button" className="primary-button" onClick={() => loadContracts(filters, selectedContractId)}>
+
+            <div className="contract-fact-grid">
+              {selectedContractFacts.map((item) => (
+                <article key={item.label} className="contract-fact-card">
+                  <span className="contract-fact-icon">
+                    <UiIcon name={item.icon} size={16} />
+                  </span>
+                  <div className="contract-fact-copy">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <p className="contract-spotlight-summary">{selectedContractSummary}</p>
+
+            <div className="contract-command-actions">
+              <button type="button" className="secondary-button" onClick={handleDownload}>
+                <UiIcon name="file" size={16} />
+                Baixar PDF
+              </button>
+
+              <Link className="secondary-button" to={`/parcelas?numeroContrato=${encodeURIComponent(selectedContract.numeroContrato)}`}>
                 <UiIcon name="stack" size={16} />
-                {loading ? 'Carregando...' : 'Atualizar carteira'}
-              </button>
-              <button type="button" className="secondary-button" onClick={handleResetFilters}>
-                Limpar filtros
-              </button>
+                Ver parcelas
+              </Link>
+
+              {canCancelSelected ? (
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => runAction(() => api.cancelContract(token, selectedContract.id), 'Contrato cancelado.')}
+                >
+                  <UiIcon name="ban" size={16} />
+                  Cancelar contrato
+                </button>
+              ) : null}
             </div>
-            <p className="helper-text contract-filter-note">
-              {loading ? 'Atualizando a carteira de contratos agora.' : 'A mesma filtragem alimenta a lista e o painel principal.'}
-            </p>
+          </section>
+
+          <SectionCard title="Resumo" subtitle="Dados principais e contexto do contrato em foco.">
+            <dl className="detail-grid contract-detail-grid">
+              <div>
+                <dt>Status atual</dt>
+                <dd>{formatLabel(selectedContract.status)}</dd>
+              </div>
+              <div>
+                <dt>Proxima acao</dt>
+                <dd>{nextStepLabel}</dd>
+              </div>
+              <div>
+                <dt>{selectedContract.dataFormalizacao ? 'Formalizado em' : 'Prazo do aceite'}</dt>
+                <dd>{selectedContract.dataFormalizacao ? formatDateTime(selectedContract.dataFormalizacao) : selectedContractExpiryLabel}</dd>
+              </div>
+              <div>
+                <dt>Arquivo emitido</dt>
+                <dd>{getPdfFileName(selectedContract.pdfPath)}</dd>
+              </div>
+              <div className="detail-span-2">
+                <dt>Finalidade</dt>
+                <dd>{selectedContractPurpose}</dd>
+              </div>
+              <div className="detail-span-2">
+                <dt>Seu perfil agora</dt>
+                <dd>{permissionSummary}</dd>
+              </div>
+            </dl>
           </SectionCard>
 
-          <SectionCard
-            title="Contratos"
-            subtitle="Selecione um item para abrir os detalhes do fluxo."
-            actions={<span className="contract-utility-badge">{contracts.length} item(ns)</span>}
-          >
-            {contracts.length ? (
-              <div className="list-stack contract-list-stack">
-                {contracts.map((contract) => (
-                  <article
-                    key={contract.id}
-                    className={`list-card contract-list-card${
-                      selectedContractId === contract.id ? ' list-card-highlight contract-list-card-active' : ''
-                    }`}
-                  >
-                    <div className="contract-list-card-main">
-                      <div className="contract-list-card-topline">
-                        <strong>{contract.numeroContrato}</strong>
-                        <StatusBadge value={contract.status} />
-                      </div>
-                      <p className="contract-list-card-purpose">
-                        {contract.finalidade || 'Sem finalidade informada para este contrato.'}
-                      </p>
-                      <div className="contract-list-card-meta">
-                        <span>
-                          <UiIcon name="file" size={15} />
-                          Proposta #{contract.propostaId}
-                        </span>
-                        <span>
-                          <UiIcon name="clock" size={15} />
-                          {contract.dataFormalizacao
-                            ? `Formalizado em ${formatDateTime(contract.dataFormalizacao)}`
-                            : `Gerado em ${formatDateTime(contract.dataGeracao)}`}
-                        </span>
-                      </div>
-                    </div>
+          <SectionCard title="Assinaturas" subtitle="Acompanhe o aceite eletronico e o proximo passo deste contrato.">
+            {canSignSelected ? (
+              <div className="contract-signature-shell">
+                <div className="contract-signature-head">
+                  <div>
+                    <span className="contract-detail-label">Fluxo protegido de assinatura</span>
+                    <strong>Abra o desafio guiado antes do aceite final</strong>
+                  </div>
+                  {signatureChallenge ? <span className="contract-signature-chip">Desafio ativo ate {challengeExpiryLabel}</span> : null}
+                </div>
 
-                    <div className="stack-actions contract-list-card-actions">
-                      <button
-                        type="button"
-                        className={selectedContractId === contract.id ? 'primary-button' : 'secondary-button'}
-                        onClick={() => handleSelectContract(contract.id)}
-                      >
-                        {selectedContractId === contract.id ? 'Selecionado' : 'Abrir'}
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                <p className="helper-text">
+                  O aceite acontece em duas etapas: iniciar o desafio e confirmar a assinatura com senha atual ou codigo
+                  temporario, sempre dentro do prazo do contrato.
+                </p>
+
+                <div className="contract-signature-actions">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={handleOpenSignatureDialog}
+                    disabled={signatureBusy || !hasBankAccount}
+                  >
+                    <UiIcon name="signature" size={16} />
+                    {signatureChallenge ? 'Continuar desafio' : 'Abrir assinatura guiada'}
+                  </button>
+                </div>
+
+                {signatureChallenge ? (
+                  <p className="helper-text contract-signature-helper">
+                    Desafio iniciado. Finalize o aceite ate {challengeExpiryLabel}.
+                  </p>
+                ) : null}
               </div>
             ) : (
-              <EmptyState
-                title="Nenhum contrato encontrado."
-                description="Ajuste os filtros para localizar contratos vinculados ao seu perfil."
-              />
+              <div className="contract-signature-readonly">
+                <article className="contract-document-card contract-document-card-soft">
+                  <span className="contract-detail-label">Situacao da assinatura</span>
+                  <strong>{nextStepLabel}</strong>
+                  <p className="helper-text">{permissionSummary}</p>
+                  {selectedContract.status === 'ASSINADO_PARCIALMENTE' ? (
+                    <p className="helper-text">
+                      Uma assinatura ja foi concluida. Falta o aceite restante para formalizar o contrato.
+                    </p>
+                  ) : null}
+                </article>
+              </div>
             )}
           </SectionCard>
-        </aside>
 
-        <div className="contracts-stage">
-          {selectedContract ? (
-            <>
-              <section className={`contract-command-board contract-tone-${selectedContractTone}`}>
-                <div className="contract-command-main">
-                  <span className="contract-spotlight-label">
-                    <UiIcon name="file-check" size={16} />
-                    Contrato em foco
-                  </span>
-
-                  <div className="contract-command-header">
-                    <div>
-                      <h2>{selectedContract.numeroContrato}</h2>
-                      <p>{selectedContractPurpose}</p>
-                    </div>
-                    <StatusBadge value={selectedContract.status} />
+          <SectionCard title="Documento" subtitle="Arquivo emitido e hash do contrato.">
+            <div className="contract-document-shell">
+              <article className="contract-document-card contract-document-card-feature">
+                <div className="contract-document-head">
+                  <div>
+                    <span className="contract-detail-label">Arquivo emitido</span>
+                    <strong>{getPdfFileName(selectedContract.pdfPath)}</strong>
+                    <p className="helper-text">PDF autenticado disponivel para download e conferencia no fluxo atual.</p>
                   </div>
-
-                  <div className="contract-fact-grid">
-                    {selectedContractFacts.map((item) => (
-                      <article key={item.label} className="contract-fact-card">
-                        <span className="contract-fact-icon">
-                          <UiIcon name={item.icon} size={16} />
-                        </span>
-                        <div className="contract-fact-copy">
-                          <span>{item.label}</span>
-                          <strong>{item.value}</strong>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-
-                  <p className="contract-spotlight-summary">{selectedContractSummary}</p>
-
-                  {canSignSelected ? (
-                    <div className="contract-signature-shell">
-                      <div className="contract-signature-head">
-                        <div>
-                          <span className="contract-detail-label">Fluxo protegido de assinatura</span>
-                          <strong>Abra o desafio guiado antes do aceite final</strong>
-                        </div>
-                        {signatureChallenge ? (
-                          <span className="contract-signature-chip">Desafio ativo até {challengeExpiryLabel}</span>
-                        ) : null}
-                      </div>
-
-                      <p className="helper-text">
-                        O aceite agora acontece em duas etapas: iniciar o desafio e confirmar a assinatura com senha atual
-                        ou código temporário, sempre dentro do prazo do contrato.
-                      </p>
-
-                      <div className="contract-signature-actions">
-                        <button
-                          type="button"
-                          className="primary-button"
-                          onClick={handleOpenSignatureDialog}
-                          disabled={signatureBusy || !hasBankAccount}
-                        >
-                          <UiIcon name="signature" size={16} />
-                          {signatureChallenge ? 'Continuar desafio' : 'Abrir assinatura guiada'}
-                        </button>
-                      </div>
-
-                      {signatureChallenge ? (
-                        <p className="helper-text contract-signature-helper">
-                          Desafio iniciado. Finalize o aceite até {challengeExpiryLabel}.
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  <div className="contract-command-actions">
+                  <div className="contract-document-actions">
                     <button type="button" className="secondary-button" onClick={handleDownload}>
                       <UiIcon name="file" size={16} />
                       Baixar PDF
                     </button>
-
-                    <Link
+                    <button
+                      type="button"
                       className="secondary-button"
-                      to={`/parcelas?numeroContrato=${encodeURIComponent(selectedContract.numeroContrato)}`}
+                      onClick={handleCopyHash}
+                      disabled={!selectedContract.hashDocumento}
                     >
-                      <UiIcon name="stack" size={16} />
-                      Ver parcelas
-                    </Link>
-
-                    {canCancelSelected ? (
-                      <button
-                        type="button"
-                        className="danger-button"
-                        onClick={() =>
-                          runAction(() => api.cancelContract(token, selectedContract.id), 'Contrato cancelado.')
-                        }
-                      >
-                        <UiIcon name="ban" size={16} />
-                        Cancelar contrato
-                      </button>
-                    ) : null}
+                      <UiIcon name="shield-check" size={16} />
+                      Copiar hash
+                    </button>
                   </div>
                 </div>
-
-                <div className="contract-command-side">
-                  <article className="contract-command-side-card">
-                    <span className="contract-spotlight-side-label">Próximo marco</span>
-                    <strong>{nextStepLabel}</strong>
-                    <p>{permissionSummary}</p>
-                  </article>
-
-                  <article className="contract-command-side-card contract-command-side-card-soft">
-                    <span className="contract-spotlight-side-label">Agenda financeira</span>
-                    <strong>{contractFinanceHeadline}</strong>
-                    <p>{contractFinanceDescription}</p>
-                  </article>
+                <div className="contract-document-hash">
+                  <span className="contract-detail-label">Hash do documento</span>
+                  <code className="code-box contract-code-box">
+                    {selectedContract.hashDocumento || 'Hash indisponivel para este contrato.'}
+                  </code>
                 </div>
-              </section>
+                <p className="helper-text">
+                  Esse identificador preserva a referencia do conteudo gerado na emissao do contrato.
+                </p>
+              </article>
+            </div>
+          </SectionCard>
 
-              <SectionCard
-                title="Linha do fluxo"
-                subtitle="Veja exatamente em que etapa o contrato está e o que vem depois."
-                actions={<span className="contract-utility-badge">Fluxo do contrato</span>}
-              >
-                <div className="contract-flow-grid">
-                  {flowSteps.map((step, index) => (
-                    <article key={step.key} className={`contract-flow-step is-${step.state}`}>
-                      <span className="contract-flow-index">0{index + 1}</span>
-                      <div className="contract-flow-copy">
-                        <strong>{step.title}</strong>
-                        <p>{step.description}</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </SectionCard>
+          <SectionCard
+            title="Parcelas"
+            subtitle={
+              selectedContract.status === 'FORMALIZADO'
+                ? 'Cronograma financeiro vinculado ao contrato formalizado.'
+                : 'As parcelas aparecem com mais destaque quando o contrato entra na etapa financeira.'
+            }
+            actions={
+              <span className="contract-utility-badge">
+                {installmentsLoading ? 'Atualizando agenda' : `${installmentOverview.total} parcela(s)`}
+              </span>
+            }
+          >
+            <div className="contract-finance-shell">
+              <article className="contract-document-card contract-document-card-soft">
+                <span className="contract-detail-label">Situacao da carteira</span>
+                <strong>{contractFinanceHeadline}</strong>
+                <p>{contractFinanceDescription}</p>
+              </article>
 
-              <div className="contracts-stage-grid">
-                <SectionCard
-                  title="Radar financeiro"
-                  subtitle="Resumo da agenda de parcelas vinculada ao contrato em foco."
-                  actions={
-                    <span className="contract-utility-badge">
-                      {installmentsLoading ? 'Atualizando agenda' : `${installmentOverview.total} parcela(s)`}
-                    </span>
-                  }
-                >
-                  <div className="contract-finance-shell">
-                    <div className="contract-finance-metrics">
-                      <article className="contract-finance-metric">
-                        <span>Total previsto</span>
-                        <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.totalValue)}</strong>
-                      </article>
-                      <article className="contract-finance-metric">
-                        <span>Pago até agora</span>
-                        <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.paidValue)}</strong>
-                      </article>
-                      <article className="contract-finance-metric">
-                        <span>Em aberto</span>
-                        <strong>{installmentsLoading ? '--' : installmentOverview.open}</strong>
-                      </article>
-                      <article className="contract-finance-metric">
-                        <span>Em atraso</span>
-                        <strong>{installmentsLoading ? '--' : installmentOverview.overdue}</strong>
-                      </article>
-                    </div>
-
-                    {installmentsError ? <p className="helper-text">{installmentsError}</p> : null}
-
-                    {installmentsLoading ? (
-                      <p className="helper-text">Carregando cronograma de parcelas...</p>
-                    ) : installmentOverview.preview.length ? (
-                      <div className="contract-finance-feed">
-                        {installmentOverview.preview.map((installment) => {
-                          const pill = getInstallmentPill(installment);
-
-                          return (
-                            <article key={installment.id} className="contract-installment-item">
-                              <div className="contract-installment-copy">
-                                <strong>Parcela {installment.numero}</strong>
-                                <p>{formatDueLabel(installment.dataVencimento)}</p>
-                              </div>
-                              <div className="contract-installment-meta">
-                                <span className={`contract-pill tone-${pill.tone}`}>{pill.label}</span>
-                                <strong>{formatCurrency(installment.valorPrevisto)}</strong>
-                                <small>{formatLocalDate(installment.dataVencimento)}</small>
-                              </div>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <EmptyState
-                        title="Sem parcelas carregadas."
-                        description="As parcelas aparecem aqui assim que o contrato avancar para a etapa financeira."
-                      />
-                    )}
-
-                    <div className="contract-panel-footer">
-                      <Link
-                        className="secondary-button"
-                        to={`/parcelas?numeroContrato=${encodeURIComponent(selectedContract.numeroContrato)}`}
-                      >
-                        <UiIcon name="stack" size={16} />
-                        Abrir cronograma completo
-                      </Link>
-                    </div>
-                  </div>
-                </SectionCard>
-
-                <SectionCard
-                  title="Documento e governanca"
-                  subtitle="Arquivo emitido e hash do contrato em uma leitura direta."
-                >
-                  <div className="contract-document-shell">
-                    <article className="contract-document-card contract-document-card-feature">
-                      <div className="contract-document-head">
-                        <div>
-                          <span className="contract-detail-label">Arquivo emitido</span>
-                          <strong>{getPdfFileName(selectedContract.pdfPath)}</strong>
-                          <p className="helper-text">
-                            PDF autenticado disponível para download e conferência pelo fluxo protegido.
-                          </p>
-                        </div>
-                        <div className="contract-document-actions">
-                          <button type="button" className="secondary-button" onClick={handleDownload}>
-                            <UiIcon name="file" size={16} />
-                            Baixar PDF
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={handleCopyHash}
-                            disabled={!selectedContract.hashDocumento}
-                          >
-                            <UiIcon name="shield-check" size={16} />
-                            Copiar hash
-                          </button>
-                        </div>
-                      </div>
-                      <div className="contract-document-hash">
-                        <span className="contract-detail-label">Hash do documento</span>
-                        <code className="code-box contract-code-box">
-                          {selectedContract.hashDocumento || 'Hash indisponivel para este contrato.'}
-                        </code>
-                      </div>
-                      <p className="helper-text">
-                        Esse identificador preserva a referência do conteúdo gerado na emissão do contrato.
-                      </p>
-                    </article>
-                  </div>
-                </SectionCard>
+              <div className="contract-finance-metrics">
+                <article className="contract-finance-metric">
+                  <span>Total previsto</span>
+                  <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.totalValue)}</strong>
+                </article>
+                <article className="contract-finance-metric">
+                  <span>Pago ate agora</span>
+                  <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.paidValue)}</strong>
+                </article>
+                <article className="contract-finance-metric">
+                  <span>Em aberto</span>
+                  <strong>{installmentsLoading ? '--' : installmentOverview.open}</strong>
+                </article>
+                <article className="contract-finance-metric">
+                  <span>Em atraso</span>
+                  <strong>{installmentsLoading ? '--' : installmentOverview.overdue}</strong>
+                </article>
               </div>
-            </>
-          ) : (
-            <SectionCard
-              title="Selecione um contrato"
-              subtitle="Escolha um item da fila para abrir a nova visão operacional."
-            >
-              <EmptyState
-                title="Nenhum contrato em foco."
-                description="Assim que você selecionar um contrato, a linha do fluxo, a agenda financeira e o documento aparecem aqui."
-              />
-            </SectionCard>
-          )}
+
+              {installmentsError ? <p className="helper-text">{installmentsError}</p> : null}
+
+              {installmentsLoading ? (
+                <p className="helper-text">Carregando cronograma de parcelas...</p>
+              ) : installmentOverview.preview.length ? (
+                <div className="contract-finance-feed">
+                  {installmentOverview.preview.map((installment) => {
+                    const pill = getInstallmentPill(installment);
+
+                    return (
+                      <article key={installment.id} className="contract-installment-item">
+                        <div className="contract-installment-copy">
+                          <strong>Parcela {installment.numero}</strong>
+                          <p>{formatDueLabel(installment.dataVencimento)}</p>
+                        </div>
+                        <div className="contract-installment-meta">
+                          <span className={`contract-pill tone-${pill.tone}`}>{pill.label}</span>
+                          <strong>{formatCurrency(installment.valorPrevisto)}</strong>
+                          <small>{formatLocalDate(installment.dataVencimento)}</small>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Sem parcelas carregadas."
+                  description="As parcelas aparecem aqui assim que o contrato avancar para a etapa financeira."
+                />
+              )}
+
+              <div className="contract-panel-footer">
+                <Link className="secondary-button" to={`/parcelas?numeroContrato=${encodeURIComponent(selectedContract.numeroContrato)}`}>
+                  <UiIcon name="stack" size={16} />
+                  Abrir cronograma completo
+                </Link>
+              </div>
+            </div>
+          </SectionCard>
         </div>
-      </div>
+      ) : (
+        <SectionCard title="Selecione um contrato" subtitle="Escolha um item da lista para abrir os detalhes abaixo.">
+          <EmptyState
+            title="Nenhum contrato em foco."
+            description="Assim que voce selecionar um contrato, o resumo, o documento e as parcelas aparecem aqui."
+          />
+        </SectionCard>
+      )}
 
       <ContractSignatureDialog
         open={signatureDialogOpen}
