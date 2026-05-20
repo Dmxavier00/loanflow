@@ -1,5 +1,6 @@
 package com.api.loanflow.proposta.aplicacao;
 
+import com.api.loanflow.compartilhado.financeiro.SimulacaoFinanceira;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
 import com.api.loanflow.parcela.dominio.Parcela;
 import com.api.loanflow.parcela.dominio.ParcelaStatus;
@@ -112,8 +113,7 @@ public class PoliticaCreditoService {
 	}
 
 	private BigDecimal calcularParcelaMensalSimulada(BigDecimal valorSolicitado, BigDecimal taxaJuros, Integer prazoMeses) {
-		var fatorJuros = BigDecimal.ONE.add(taxaJuros.divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP));
-		var total = valorSolicitado.multiply(fatorJuros).setScale(2, RoundingMode.HALF_UP);
-		return total.divide(BigDecimal.valueOf(prazoMeses), 2, RoundingMode.HALF_UP);
+		var total = SimulacaoFinanceira.calcularTotalComJuros(valorSolicitado, taxaJuros);
+		return SimulacaoFinanceira.calcularParcelaMedia(total, prazoMeses);
 	}
 }

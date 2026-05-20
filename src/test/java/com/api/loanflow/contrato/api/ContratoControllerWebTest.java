@@ -8,6 +8,7 @@ import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaResponse;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
 import com.api.loanflow.contrato.dominio.MetodoAutenticacaoAssinatura;
 import com.api.loanflow.contrato.dominio.TipoAceite;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import com.api.loanflow.usuario.dominio.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -51,6 +53,7 @@ class ContratoControllerWebTest {
 			10L,
 			"LF-10-ABCDE123",
 			"Capital de giro",
+			new BigDecimal("2687.50"),
 			ContratoStatus.AGUARDANDO_ASSINATURAS,
 			"hash-documento",
 			"contrato.pdf",
@@ -65,6 +68,7 @@ class ContratoControllerWebTest {
 				.with(user("credor@loanflow.test").roles("CREDOR")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(1))
+			.andExpect(jsonPath("$.valorTotalComJuros").value(2687.50))
 			.andExpect(jsonPath("$.status").value("AGUARDANDO_ASSINATURAS"));
 
 		verify(contratoService).detalhar(1L);
@@ -82,6 +86,30 @@ class ContratoControllerWebTest {
 			.andExpect(content().bytes("pdf-teste".getBytes()));
 
 		verify(contratoService).baixarPdf(1L);
+	}
+
+	@Test
+	void listarDevePermitirFiltrarPorCategoria() throws Exception {
+		when(contratoService.listarComFiltros(
+			ContratoStatus.AGUARDANDO_ASSINATURAS,
+			"LF-10",
+			CategoriaFinalidade.CAPITAL_DE_GIRO
+		))
+			.thenReturn(java.util.List.of());
+
+		mockMvc.perform(get("/contratos")
+				.param("status", "AGUARDANDO_ASSINATURAS")
+				.param("numeroContrato", "LF-10")
+				.param("categoriaFinalidade", "CAPITAL_DE_GIRO")
+				.with(user("credor@loanflow.test").roles("CREDOR")))
+			.andExpect(status().isOk())
+			.andExpect(content().json("[]"));
+
+		verify(contratoService).listarComFiltros(
+			ContratoStatus.AGUARDANDO_ASSINATURAS,
+			"LF-10",
+			CategoriaFinalidade.CAPITAL_DE_GIRO
+		);
 	}
 
 	@Test

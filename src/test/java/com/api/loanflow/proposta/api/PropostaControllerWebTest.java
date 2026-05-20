@@ -49,6 +49,7 @@ class PropostaControllerWebTest {
 			new BigDecimal("4800.00"),
 			new BigDecimal("8.9000"),
 			6,
+			new BigDecimal("5227.20"),
 			"Tratamento odontologico com implante e exames",
 			CategoriaFinalidade.SAUDE,
 			"Solicita credito para cobrir implante dentario, radiografias e retorno clinico.",
@@ -66,6 +67,7 @@ class PropostaControllerWebTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$[0].id").value(1))
 			.andExpect(jsonPath("$[0].solicitanteNome").value("Ana Souza"))
+			.andExpect(jsonPath("$[0].valorTotalComJuros").value(5227.20))
 			.andExpect(jsonPath("$[0].categoriaFinalidade").value("SAUDE"))
 			.andExpect(jsonPath("$[0].status").value("AGUARDANDO_ACEITE"));
 
@@ -151,6 +153,7 @@ class PropostaControllerWebTest {
 			new BigDecimal("2500.00"),
 			new BigDecimal("7.5000"),
 			8,
+			new BigDecimal("2687.50"),
 			"Capital de giro",
 			CategoriaFinalidade.CAPITAL_DE_GIRO,
 			"Reforco de estoque e capital de giro.",
@@ -179,6 +182,7 @@ class PropostaControllerWebTest {
 			new BigDecimal("2500.00"),
 			new BigDecimal("7.5000"),
 			8,
+			new BigDecimal("2687.50"),
 			"Capital de giro",
 			CategoriaFinalidade.CAPITAL_DE_GIRO,
 			"Reforco de estoque e capital de giro.",

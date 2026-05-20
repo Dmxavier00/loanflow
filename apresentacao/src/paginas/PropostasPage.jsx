@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import BankAccountNotice from '../componentes/BankAccountNotice';
+import CreditorProposalDialog from '../componentes/CreditorProposalDialog';
 import EmptyState from '../componentes/EmptyState';
 import MessageBanner from '../componentes/MessageBanner';
 import SectionCard from '../componentes/SectionCard';
 import StatusBadge from '../componentes/StatusBadge';
+import UiIcon from '../componentes/UiIcon';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
 import { formatCurrency, formatDate, formatDateTime, formatLabel, formatProposalHeadline } from '../biblioteca/format';
@@ -39,7 +41,6 @@ const purposeCategoryOptions = [
 
 const defaultInterestRate = interestRateOptions[0].value;
 const defaultPurposeCategory = purposeCategoryOptions[0].value;
-
 const emptyForm = {
   valorSolicitado: '',
   taxaJuros: defaultInterestRate,
@@ -71,9 +72,7 @@ const creditorOrderStatusOptions = [
 
 const editableStatuses = ['RASCUNHO', 'AGUARDANDO_ACEITE'];
 const cancelableStatuses = ['RASCUNHO', 'AGUARDANDO_ACEITE', 'SUBMETIDA', 'EM_ANALISE'];
-const simulationDisclaimer =
-  'Simulação acadêmica: os valores, percentuais e parcelas desta tela existem para demonstrar o fluxo do protótipo e não representam oferta pública de crédito nem validação jurídica da operação.';
-
+const creditorOrdersPerPage = 6;
 const normalizeInterestRate = (value) => {
   if (value === null || value === undefined || value === '') {
     return defaultInterestRate;
@@ -105,7 +104,6 @@ const getProposalPipelineLabel = (proposal) => {
 
 export default function PropostasPage() {
   const { token, hasRole, hasBankAccount } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get('focusId');
 
@@ -116,7 +114,8 @@ export default function PropostasPage() {
   const [editingId, setEditingId] = useState(null);
   const [myProposals, setMyProposals] = useState([]);
   const [pendingProposals, setPendingProposals] = useState([]);
-  const [acceptedProposals, setAcceptedProposals] = useState([]);
+  const [acceptingSelectedProposal, setAcceptingSelectedProposal] = useState(false);
+  const [creditorOrderPage, setCreditorOrderPage] = useState(1);
   const [selectedProposalId, setSelectedProposalId] = useState(null);
   const [creditorOrderFilters, setCreditorOrderFilters] = useState({
     status: '',
@@ -159,6 +158,14 @@ export default function PropostasPage() {
     });
   }, [appliedCreditorOrderFilters, pendingProposals]);
 
+  const totalCreditorOrderPages = Math.max(1, Math.ceil(filteredPendingProposals.length / creditorOrdersPerPage));
+  const activeCreditorOrderPage = Math.min(creditorOrderPage, totalCreditorOrderPages);
+
+  const visiblePendingProposals = useMemo(() => {
+    const startIndex = (activeCreditorOrderPage - 1) * creditorOrdersPerPage;
+    return filteredPendingProposals.slice(startIndex, startIndex + creditorOrdersPerPage);
+  }, [activeCreditorOrderPage, filteredPendingProposals]);
+
   const loadData = async () => {
     setLoading(true);
     setError('');
@@ -172,7 +179,6 @@ export default function PropostasPage() {
 
       if (isCredor) {
         requests.push(api.getPendingAcceptanceProposals(token));
-        requests.push(api.getAcceptedProposals(token));
       }
 
       const responses = await Promise.all(requests);
@@ -188,17 +194,13 @@ export default function PropostasPage() {
       if (isCredor) {
         const nextPending = responses[cursor] ?? [];
         cursor += 1;
-        const nextAccepted = responses[cursor] ?? [];
-        cursor += 1;
 
         setPendingProposals(nextPending);
-        setAcceptedProposals(nextAccepted);
         setSelectedProposalId((currentId) =>
           nextPending.some((proposal) => proposal.id === currentId) ? currentId : null
         );
       } else {
         setPendingProposals([]);
-        setAcceptedProposals([]);
         setSelectedProposalId(null);
       }
     } catch (loadError) {
@@ -211,6 +213,12 @@ export default function PropostasPage() {
   useEffect(() => {
     loadData();
   }, [token, isSolicitante, isCredor]);
+
+  useEffect(() => {
+    if (creditorOrderPage > totalCreditorOrderPages) {
+      setCreditorOrderPage(totalCreditorOrderPages);
+    }
+  }, [creditorOrderPage, totalCreditorOrderPages]);
 
   const populateFormForEdit = (proposal) => {
     setEditingId(proposal.id);
@@ -237,6 +245,11 @@ export default function PropostasPage() {
   const handleCreditorOrderFilterChange = (event) => {
     const { name, value } = event.target;
     setCreditorOrderFilters((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleApplyCreditorOrderFilters = () => {
+    setAppliedCreditorOrderFilters(creditorOrderFilters);
+    setCreditorOrderPage(1);
   };
 
   const buildPayload = () => ({
@@ -281,18 +294,16 @@ export default function PropostasPage() {
       return;
     }
 
-    await runAction(
-      () => api.acceptProposal(token, selectedProposal.id),
-      `Proposta #${selectedProposal.id} aceita com sucesso.`
-    );
-  };
+    setAcceptingSelectedProposal(true);
 
-  const handleGenerateContract = async (proposalId) => {
-    await runAction(async () => {
-      const contract = await api.generateContract(token, proposalId);
-      window.localStorage.setItem('loanflow.lastContractId', String(contract.id));
-      navigate(`/contratos?numeroContrato=${encodeURIComponent(contract.numeroContrato)}&contratoId=${contract.id}`);
-    }, 'Contrato gerado com sucesso.');
+    try {
+      await runAction(
+        () => api.acceptProposal(token, selectedProposal.id),
+        `Proposta #${selectedProposal.id} aceita com sucesso.`
+      );
+    } finally {
+      setAcceptingSelectedProposal(false);
+    }
   };
 
   return (
@@ -303,7 +314,7 @@ export default function PropostasPage() {
         show={(isSolicitante || isCredor) && !hasBankAccount}
         message={
           isCredor
-            ? 'Cadastre uma conta bancária em Minha conta antes de aceitar propostas ou gerar contratos.'
+            ? 'Cadastre uma conta bancária em Minha conta antes de aceitar propostas.'
             : 'Cadastre uma conta bancária em Minha conta antes de criar ou editar propostas.'
         }
       />
@@ -400,10 +411,6 @@ export default function PropostasPage() {
                 required
               />
             </label>
-            <p className="helper-text form-span-2">
-              {simulationDisclaimer}
-            </p>
-
             <div className="form-actions form-span-2">
               <button type="submit" className="primary-button" disabled={!hasBankAccount}>
                 {editingId ? 'Salvar alterações' : 'Criar proposta'}
@@ -413,9 +420,6 @@ export default function PropostasPage() {
               </button>
               {proposalBeingEdited ? <StatusBadge value={proposalBeingEdited.status} /> : null}
             </div>
-            <p className="helper-text form-span-2">
-              A expiração da proposta é renovada automaticamente por 7 dias sempre que ela for criada ou editada.
-            </p>
           </form>
         </SectionCard>
       ) : null}
@@ -483,6 +487,10 @@ export default function PropostasPage() {
                       <dd>{proposal.taxaJuros}%</dd>
                     </div>
                     <div>
+                      <dt>Total com juros</dt>
+                      <dd>{formatCurrency(proposal.valorTotalComJuros)}</dd>
+                    </div>
+                    <div>
                       <dt>Prazo</dt>
                       <dd>{proposal.prazoMeses} meses</dd>
                     </div>
@@ -513,24 +521,7 @@ export default function PropostasPage() {
 
       {isCredor ? (
         <SectionCard
-          title="Ativos do credor"
-          subtitle="Aqui você acompanha a fila de aceite e as propostas simuladas que já estão na sua carteira."
-        >
-          <div className="metrics-grid metrics-grid-compact">
-            <article className="metric-card metric-card-compact metric-gold">
-              <span>Aguardando aceite</span>
-              <strong>{pendingProposals.length}</strong>
-            </article>
-            <article className="metric-card metric-card-compact metric-green">
-              <span>Já aceitas</span>
-              <strong>{acceptedProposals.length}</strong>
-            </article>
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {isCredor ? (
-        <SectionCard
+          className="creditor-order-section"
           title="Ordens aguardando aceite"
           subtitle="Selecione uma proposta aberta para assumir a operação simulada como credor."
         >
@@ -578,7 +569,7 @@ export default function PropostasPage() {
             <button
               type="button"
               className="primary-button"
-              onClick={() => setAppliedCreditorOrderFilters(creditorOrderFilters)}
+              onClick={handleApplyCreditorOrderFilters}
             >
               Aplicar filtros
             </button>
@@ -587,33 +578,73 @@ export default function PropostasPage() {
           {loading ? (
             <p className="helper-text">Carregando propostas aguardando aceite...</p>
           ) : filteredPendingProposals.length ? (
-            <div className="list-stack">
-              {filteredPendingProposals.map((proposal) => (
-                <article
-                  key={proposal.id}
-                  className={`list-card${selectedProposalId === proposal.id ? ' list-card-highlight' : ''}`}
-                >
-                  <div>
-                    <strong>{formatProposalHeadline(proposal)}</strong>
-                    <p>{proposal.finalidade}</p>
-                    <small>
-                      Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
-                      {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses | Expira em{' '}
-                      {formatDate(proposal.dataExpiracao)}
-                    </small>
-                  </div>
-                  <div className="stack-actions">
-                    <StatusBadge value={proposal.status} />
-                    <button
-                      type="button"
-                      className={selectedProposalId === proposal.id ? 'primary-button' : 'secondary-button'}
-                      onClick={() => setSelectedProposalId(proposal.id)}
-                    >
-                      {selectedProposalId === proposal.id ? 'Selecionada' : 'Selecionar'}
-                    </button>
-                  </div>
-                </article>
-              ))}
+            <div className="creditor-order-results">
+              <div className="list-stack">
+                {visiblePendingProposals.map((proposal) => (
+                  <article
+                    key={proposal.id}
+                    className={`list-card creditor-order-card${selectedProposalId === proposal.id ? ' list-card-highlight' : ''}`}
+                  >
+                    <div>
+                      <strong>{formatProposalHeadline(proposal)}</strong>
+                      <p>{proposal.finalidade}</p>
+                      <small>
+                        Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
+                        {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses | Expira em{' '}
+                        {formatDate(proposal.dataExpiracao)}
+                      </small>
+                    </div>
+                    <div className="stack-actions">
+                      <StatusBadge value={proposal.status} />
+                      <button
+                        type="button"
+                        className={selectedProposalId === proposal.id ? 'primary-button' : 'secondary-button'}
+                        onClick={() => setSelectedProposalId(proposal.id)}
+                      >
+                        {selectedProposalId === proposal.id ? 'Selecionada' : 'Selecionar'}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="creditor-order-pagination">
+                <div className="creditor-order-pagination-copy">
+                  <strong>
+                    Página {activeCreditorOrderPage} de {totalCreditorOrderPages}
+                  </strong>
+                  <span>
+                    Mostrando{' '}
+                    {Math.min((activeCreditorOrderPage - 1) * creditorOrdersPerPage + 1, filteredPendingProposals.length)} a{' '}
+                    {Math.min(activeCreditorOrderPage * creditorOrdersPerPage, filteredPendingProposals.length)} de{' '}
+                    {filteredPendingProposals.length} propostas
+                  </span>
+                </div>
+                <div className="creditor-order-pagination-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setCreditorOrderPage((currentPage) => Math.max(1, currentPage - 1))}
+                    disabled={activeCreditorOrderPage === 1}
+                  >
+                    <span className="creditor-order-pagination-icon creditor-order-pagination-icon-left" aria-hidden="true">
+                      <UiIcon name="arrow-right" size={16} />
+                    </span>
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setCreditorOrderPage((currentPage) => Math.min(totalCreditorOrderPages, currentPage + 1))
+                    }
+                    disabled={activeCreditorOrderPage === totalCreditorOrderPages}
+                  >
+                    Próxima
+                    <UiIcon name="arrow-right" size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <EmptyState
@@ -632,120 +663,14 @@ export default function PropostasPage() {
         </SectionCard>
       ) : null}
 
-      {isCredor ? (
-        <SectionCard
-          title="Ordem selecionada"
-          subtitle="Confira os dados da simulação antes de aceitar a proposta."
-          actions={
-            <button
-              type="button"
-              className="primary-button"
-              onClick={handleAcceptSelected}
-              disabled={!selectedProposal || !hasBankAccount}
-            >
-              Aceitar proposta
-            </button>
-          }
-        >
-          <p className="helper-text">{simulationDisclaimer}</p>
-          {selectedProposal ? (
-            <dl className="detail-grid">
-              <div>
-                <dt>Solicitante</dt>
-                <dd>{formatProposalHeadline(selectedProposal)}</dd>
-              </div>
-              <div>
-                <dt>Código</dt>
-                <dd>#{selectedProposal.id}</dd>
-              </div>
-              <div>
-                <dt>Status atual</dt>
-                <dd>
-                  <StatusBadge value={selectedProposal.status} />
-                </dd>
-              </div>
-              <div>
-                <dt>Valor solicitado</dt>
-                <dd>{formatCurrency(selectedProposal.valorSolicitado)}</dd>
-              </div>
-              <div>
-                <dt>Taxa simulada</dt>
-                <dd>{selectedProposal.taxaJuros}%</dd>
-              </div>
-              <div>
-                <dt>Prazo</dt>
-                <dd>{selectedProposal.prazoMeses} meses</dd>
-              </div>
-              <div>
-                <dt>Expiração</dt>
-                <dd>{formatDate(selectedProposal.dataExpiracao)}</dd>
-              </div>
-              <div>
-                <dt>Categoria</dt>
-                <dd>{formatLabel(selectedProposal.categoriaFinalidade)}</dd>
-              </div>
-              <div className="detail-span-2">
-                <dt>Resumo do pedido</dt>
-                <dd>{selectedProposal.finalidade}</dd>
-              </div>
-              <div className="detail-span-2">
-                <dt>Descrição detalhada</dt>
-                <dd>{selectedProposal.descricaoDetalhada}</dd>
-              </div>
-            </dl>
-          ) : (
-            <EmptyState
-              title="Nenhuma proposta selecionada."
-              description="Escolha uma proposta na lista acima para liberar o aceite."
-            />
-          )}
-        </SectionCard>
-      ) : null}
-
-      {isCredor ? (
-        <SectionCard
-          title="Propostas aceitas por você"
-          subtitle="Histórico das propostas simuladas já assumidas pelo seu credor."
-        >
-          {loading ? (
-            <p className="helper-text">Carregando propostas aceitas...</p>
-          ) : acceptedProposals.length ? (
-            <div className="list-stack">
-              {acceptedProposals.map((proposal) => (
-                <article key={proposal.id} className="list-card">
-                  <div>
-                    <strong>{formatProposalHeadline(proposal)}</strong>
-                    <p>{proposal.finalidade}</p>
-                    <small>
-                      Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
-                      {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses
-                    </small>
-                  </div>
-                  <div className="stack-actions">
-                    <StatusBadge value={proposal.status} />
-                    {['ACEITA', 'APROVADA'].includes(proposal.status) ? (
-                      <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() => handleGenerateContract(proposal.id)}
-                        disabled={!hasBankAccount}
-                      >
-                        Gerar contrato
-                      </button>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="Você ainda não aceitou propostas."
-              description="As propostas aceitas nesta tela aparecerão aqui."
-            />
-          )}
-        </SectionCard>
-      ) : null}
-
+      <CreditorProposalDialog
+        open={isCredor && Boolean(selectedProposal)}
+        proposal={selectedProposal}
+        busy={acceptingSelectedProposal}
+        hasBankAccount={hasBankAccount}
+        onClose={() => setSelectedProposalId(null)}
+        onAccept={handleAcceptSelected}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaRequest;
 import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaResponse;
 import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -44,9 +45,9 @@ public class ContratoController {
 	public List<ContratoResponse> listar(
 		@RequestParam(required = false) ContratoStatus status,
 		@RequestParam(required = false) String numeroContrato,
-		@RequestParam(required = false) String finalidade
+		@RequestParam(required = false) CategoriaFinalidade categoriaFinalidade
 	) {
-		return contratoService.listarComFiltros(status, numeroContrato, finalidade);
+		return contratoService.listarComFiltros(status, numeroContrato, categoriaFinalidade);
 	}
 
 	@GetMapping("/{id}")

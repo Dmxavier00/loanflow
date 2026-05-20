@@ -1,8 +1,10 @@
 package com.api.loanflow.contrato.api.dto;
 
+import com.api.loanflow.compartilhado.financeiro.SimulacaoFinanceira;
 import com.api.loanflow.contrato.dominio.Contrato;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
 
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 
@@ -11,6 +13,7 @@ public record ContratoResponse(
 	Long propostaId,
 	String numeroContrato,
 	String finalidade,
+	BigDecimal valorTotalComJuros,
 	ContratoStatus status,
 	String hashDocumento,
 	String pdfPath,
@@ -25,6 +28,10 @@ public record ContratoResponse(
 			contrato.getProposta().getId(),
 			contrato.getNumeroContrato(),
 			contrato.getProposta().getFinalidade(),
+			SimulacaoFinanceira.calcularTotalComJuros(
+				contrato.getProposta().getValorSolicitado(),
+				contrato.getProposta().getTaxaJuros()
+			),
 			contrato.getStatus(),
 			contrato.getHashDocumento(),
 			extractPdfFileName(contrato.getPdfPath()),

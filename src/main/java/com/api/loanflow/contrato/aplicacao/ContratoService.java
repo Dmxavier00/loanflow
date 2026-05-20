@@ -3,6 +3,7 @@ package com.api.loanflow.contrato.aplicacao;
 import com.api.loanflow.auditoria.aplicacao.AuditoriaService;
 import com.api.loanflow.auditoria.dominio.AuditoriaAcao;
 import com.api.loanflow.compartilhado.criptografia.HashService;
+import com.api.loanflow.compartilhado.financeiro.SimulacaoFinanceira;
 import com.api.loanflow.compartilhado.excecao.RecursoNaoEncontradoException;
 import com.api.loanflow.compartilhado.excecao.RegraNegocioException;
 import com.api.loanflow.contrato.api.dto.AssinaturaResponse;
@@ -20,6 +21,7 @@ import com.api.loanflow.notificacao.dominio.TipoNotificacao;
 import com.api.loanflow.parcela.aplicacao.ParcelaService;
 import com.api.loanflow.proposta.aplicacao.PoliticaCreditoService;
 import com.api.loanflow.proposta.aplicacao.PropostaService;
+import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import com.api.loanflow.proposta.dominio.Proposta;
 import com.api.loanflow.proposta.dominio.PropostaStatus;
 import com.api.loanflow.usuario.aplicacao.UsuarioService;
@@ -146,14 +148,14 @@ public class ContratoService {
 	public List<ContratoResponse> listarComFiltros(
 		ContratoStatus status,
 		String numeroContrato,
-		String finalidade
+		CategoriaFinalidade categoriaFinalidade
 	) {
 		contratoExpiracaoService.expirarPendentes();
 		var usuario = usuarioService.usuarioAtual();
 		var spec = Specification.where(specAcessivelAoUsuario(usuario))
 			.and(specStatus(status))
 			.and(specNumeroContrato(numeroContrato))
-			.and(specFinalidade(finalidade));
+			.and(specCategoriaFinalidade(categoriaFinalidade));
 		return contratoRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "dataGeracao")).stream()
 			.map(ContratoResponse::from)
 			.toList();
@@ -385,9 +387,9 @@ public class ContratoService {
 		var solicitante = proposta.getSolicitante();
 		var solicitanteUsuario = solicitante.getUsuario();
 		var credorUsuario = proposta.getCredor().getUsuario();
-		var totalEstimado = calcularTotalEstimado(proposta);
+		var totalEstimado = SimulacaoFinanceira.calcularTotalComJuros(proposta.getValorSolicitado(), proposta.getTaxaJuros());
 		var jurosEstimados = totalEstimado.subtract(proposta.getValorSolicitado()).setScale(2, RoundingMode.HALF_UP);
-		var parcelaEstimada = calcularParcelaEstimada(proposta, totalEstimado);
+		var parcelaEstimada = SimulacaoFinanceira.calcularParcelaMedia(totalEstimado, proposta.getPrazoMeses());
 
 		return """
 			Contrato de Microcrédito P2P - Instrumento Particular
@@ -525,15 +527,6 @@ public class ContratoService {
 			formatarMoeda(parcelaEstimada),
 			formatarDataHora(dataExpiracaoAssinatura)
 		);
-	}
-
-	private BigDecimal calcularTotalEstimado(Proposta proposta) {
-		var fatorJuros = BigDecimal.ONE.add(proposta.getTaxaJuros().divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP));
-		return proposta.getValorSolicitado().multiply(fatorJuros).setScale(2, RoundingMode.HALF_UP);
-	}
-
-	private BigDecimal calcularParcelaEstimada(Proposta proposta, BigDecimal totalEstimado) {
-		return totalEstimado.divide(BigDecimal.valueOf(proposta.getPrazoMeses()), 2, RoundingMode.HALF_UP);
 	}
 
 	private String formatarMoeda(BigDecimal valor) {
@@ -690,17 +683,13 @@ public class ContratoService {
 		};
 	}
 
-	private Specification<Contrato> specFinalidade(String finalidade) {
+	private Specification<Contrato> specCategoriaFinalidade(CategoriaFinalidade categoriaFinalidade) {
 		return (root, query, cb) -> {
-			if (finalidade == null || finalidade.isBlank()) {
+			if (categoriaFinalidade == null) {
 				return cb.conjunction();
 			}
-			var termo = "%" + finalidade.trim().toLowerCase(Locale.ROOT) + "%";
 			var proposta = root.join("proposta");
-			return cb.or(
-				cb.like(cb.lower(proposta.get("finalidade")), termo),
-				cb.like(cb.lower(proposta.get("descricaoDetalhada")), termo)
-			);
+			return cb.equal(proposta.get("categoriaFinalidade"), categoriaFinalidade);
 		};
 	}
 }

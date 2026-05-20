@@ -1,5 +1,6 @@
 package com.api.loanflow.proposta.api.dto;
 
+import com.api.loanflow.compartilhado.financeiro.SimulacaoFinanceira;
 import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import com.api.loanflow.proposta.dominio.Proposta;
 import com.api.loanflow.proposta.dominio.PropostaStatus;
@@ -16,6 +17,7 @@ public record PropostaResponse(
 	BigDecimal valorSolicitado,
 	BigDecimal taxaJuros,
 	Integer prazoMeses,
+	BigDecimal valorTotalComJuros,
 	String finalidade,
 	CategoriaFinalidade categoriaFinalidade,
 	String descricaoDetalhada,
@@ -32,6 +34,7 @@ public record PropostaResponse(
 			proposta.getValorSolicitado(),
 			proposta.getTaxaJuros(),
 			proposta.getPrazoMeses(),
+			SimulacaoFinanceira.calcularTotalComJuros(proposta.getValorSolicitado(), proposta.getTaxaJuros()),
 			proposta.getFinalidade(),
 			proposta.getCategoriaFinalidade(),
 			proposta.getDescricaoDetalhada(),
