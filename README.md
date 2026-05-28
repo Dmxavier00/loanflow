@@ -1,6 +1,6 @@
 # LoanFlow
 
-Protótipo acadêmico de uma plataforma web de microcrédito P2P para TCC, com API Spring Boot, interface React e fluxo completo de proposta, contrato, assinatura eletrônica simulada, parcelas, pagamentos e auditoria.
+Protótipo acadêmico de uma plataforma web de microcrédito P2P para TCC, com API Spring Boot, interface React e fluxo completo de proposta, contrato, formalização automática, parcelas, pagamentos e auditoria.
 
 ## Visão Geral
 
@@ -10,7 +10,7 @@ O projeto foi construído para demonstrar um fluxo funcional de concessão de cr
 - perfis de `SOLICITANTE`, `CREDOR` e `ADMIN`
 - criação, análise e aprovação de propostas
 - geração de contrato em PDF com hash do documento
-- assinatura eletrônica simulada em duas etapas, com desafio curto por senha atual ou código temporário
+- formalização automática do contrato quando o credor aceita a proposta
 - geração de parcelas e registro manual de pagamentos
 - notificações e trilha de auditoria
 - dashboard administrativo básico
@@ -92,7 +92,7 @@ infraestrutura/persistencia
 - cadastro e manutenção de conta bancária
 - consulta de credores para composição do fluxo
 - criação, edição, submissão, aceite, análise, aprovação, rejeição e cancelamento de propostas
-- geração, consulta, assinatura guiada, download e cancelamento de contratos
+- geração, consulta, formalização automática, download e cancelamento de contratos
 - geração e consulta de parcelas
 - registro e cancelamento de pagamentos manuais
 - notificações por usuário
@@ -293,8 +293,8 @@ VITE_API_BASE_URL=http://localhost:8080
 4. Um credor aceita a oportunidade.
 5. O credor inicia a análise e aprova a proposta.
 6. O sistema gera o contrato.
-7. Solicitante e credor iniciam um desafio curto e confirmam a assinatura com senha atual ou código temporário.
-8. O contrato é formalizado e as parcelas são criadas.
+7. O credor aceita a proposta e o contrato é formalizado automaticamente.
+8. As parcelas são criadas e passam a compor a agenda financeira da operação.
 9. O solicitante registra pagamentos manuais.
 10. O sistema gera notificações e registra auditoria dos eventos.
 
@@ -355,8 +355,6 @@ POST /contratos/proposta/{propostaId}/gerar
 GET /contratos
 GET /contratos/{id}
 GET /contratos/{id}/download
-POST /contratos/{id}/assinatura/desafio
-POST /contratos/{id}/assinar
 POST /contratos/{id}/cancelar
 ```
 
@@ -406,7 +404,6 @@ Artefatos gerados por esses scripts ficam em `artefatos/` e não são versionado
 
 - [documentacao/roteiro-postman.md](documentacao/roteiro-postman.md)
 - [documentacao/loanflow-api.http](documentacao/loanflow-api.http)
-- [documentacao/checklist-smoke-fase1-assinatura.md](documentacao/checklist-smoke-fase1-assinatura.md)
 
 ## Limitações do Protótipo
 
@@ -427,7 +424,6 @@ Este repositório não implementa operação financeira real. Estão fora do esc
 - os demais endpoints usam `Authorization: Bearer <token>`
 - pagamentos são manuais e simulados
 - o PDF de contrato é gerado localmente
-- a assinatura é representada por um fluxo guiado com desafio curto, reautenticação e trilha de eventos
-- o contrato expira automaticamente quando o prazo de assinatura acaba
-- desafios de assinatura podem expirar, ser consumidos ou ser cancelados internamente para reforçar a rastreabilidade
+- a formalização principal do fluxo acontece automaticamente no aceite do credor
+- o PDF do contrato mantém hash e trilha de auditoria para reforçar a rastreabilidade
 - eventos relevantes ficam registrados na auditoria

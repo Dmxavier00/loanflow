@@ -6,9 +6,6 @@
 @credorId = 1
 @propostaId = 1
 @contratoId = 1
-@desafioIdSolicitante = substitua-pelo-desafio-do-solicitante
-@desafioIdCredor = substitua-pelo-desafio-do-credor
-@codigoTemporarioCredor = substitua-pelo-codigo-da-notificacao
 @parcelaId = 1
 @pagamentoId = 1
 
@@ -249,63 +246,19 @@ Authorization: Bearer {{tokenSolicitante}}
 POST {{baseUrl}}/contratos/{{contratoId}}/cancelar
 Authorization: Bearer {{tokenCredor}}
 
-### 24. Iniciar desafio por senha como solicitante
-POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
-Authorization: Bearer {{tokenSolicitante}}
-Content-Type: application/json
-
-{
-  "metodo": "REAUTENTICACAO_SENHA"
-}
-
-### 25. Confirmar assinatura do solicitante com a senha atual
-POST {{baseUrl}}/contratos/{{contratoId}}/assinar
-Authorization: Bearer {{tokenSolicitante}}
-Content-Type: application/json
-
-{
-  "aceite": true,
-  "desafioId": "{{desafioIdSolicitante}}",
-  "codigo": "Senha@123"
-}
-
-### 26. Iniciar desafio por código temporário como credor
-POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
-Authorization: Bearer {{tokenCredor}}
-Content-Type: application/json
-
-{
-  "metodo": "CODIGO_ONE_TIME"
-}
-
-### 27. Localizar o código temporário na central de notificações do credor
-GET {{baseUrl}}/notificacoes?lida=false&tipo=SISTEMA
-Authorization: Bearer {{tokenCredor}}
-
-### 28. Confirmar assinatura do credor com o código temporário
-POST {{baseUrl}}/contratos/{{contratoId}}/assinar
-Authorization: Bearer {{tokenCredor}}
-Content-Type: application/json
-
-{
-  "aceite": true,
-  "desafioId": "{{desafioIdCredor}}",
-  "codigo": "{{codigoTemporarioCredor}}"
-}
-
-### 29. Baixar contrato em PDF
+### 24. Baixar contrato em PDF
 GET {{baseUrl}}/contratos/{{contratoId}}/download
 Authorization: Bearer {{tokenSolicitante}}
 
-### 30. Listar parcelas do contrato
+### 25. Listar parcelas do contrato
 GET {{baseUrl}}/contratos/{{contratoId}}/parcelas
 Authorization: Bearer {{tokenSolicitante}}
 
-### 31. Consultar parcela
+### 26. Consultar parcela
 GET {{baseUrl}}/parcelas/{{parcelaId}}
 Authorization: Bearer {{tokenSolicitante}}
 
-### 32. Registrar pagamento manual
+### 27. Registrar pagamento manual
 POST {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos
 Authorization: Bearer {{tokenSolicitante}}
 Content-Type: application/json
@@ -316,38 +269,38 @@ Content-Type: application/json
   "comprovante": "Comprovante simulado para protótipo"
 }
 
-### 33. Listar pagamentos da parcela
+### 28. Listar pagamentos da parcela
 GET {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos
 Authorization: Bearer {{tokenSolicitante}}
 
-### 34. Opcional: cancelar pagamento manual
+### 29. Opcional: cancelar pagamento manual
 POST {{baseUrl}}/parcelas/{{parcelaId}}/pagamentos/{{pagamentoId}}/cancelar
 Authorization: Bearer {{tokenSolicitante}}
 
-### 35. Listar notificações do usuário
+### 30. Listar notificações do usuário
 GET {{baseUrl}}/notificacoes
 Authorization: Bearer {{tokenSolicitante}}
 
-### 36. Listar notificações com filtro
+### 31. Listar notificações com filtro
 GET {{baseUrl}}/notificacoes?lida=false&tipo=CONTRATO
 Authorization: Bearer {{tokenSolicitante}}
 
-### 37. Listar auditorias como admin
+### 32. Listar auditorias como admin
 GET {{baseUrl}}/admin/auditorias
 Authorization: Bearer {{tokenAdmin}}
 
-### 38. Listar auditorias com filtro
-GET {{baseUrl}}/admin/auditorias?acao=ASSINAR&entidadeTipo=Contrato&entidadeId={{contratoId}}
+### 33. Listar auditorias com filtro
+GET {{baseUrl}}/admin/auditorias?acao=FORMALIZAR&entidadeTipo=Contrato&entidadeId={{contratoId}}
 Authorization: Bearer {{tokenAdmin}}
 
-### 39. Dashboard admin
+### 34. Dashboard admin
 GET {{baseUrl}}/admin/dashboard
 Authorization: Bearer {{tokenAdmin}}
 
-### 40. Marcar parcelas vencidas como em atraso
+### 35. Marcar parcelas vencidas como em atraso
 POST {{baseUrl}}/admin/parcelas/marcar-atrasadas
 Authorization: Bearer {{tokenAdmin}}
 
-### 41. Opcional: cancelar proposta antes de aprovar/contratar
+### 36. Opcional: cancelar proposta antes de aprovar/contratar
 POST {{baseUrl}}/propostas/{{propostaId}}/cancelar
 Authorization: Bearer {{tokenSolicitante}}

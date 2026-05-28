@@ -94,7 +94,7 @@ public class UsuarioService {
 	@Transactional(readOnly = true)
 	public void validarSenhaAtual(Usuario usuario, String senha) {
 		if (senha == null || senha.isBlank() || !passwordEncoder.matches(senha, usuario.getSenhaHash())) {
-			throw new RegraNegocioException("Senha atual inválida para confirmar a assinatura.");
+			throw new RegraNegocioException("Senha atual inválida para confirmar a operação.");
 		}
 	}
 
@@ -160,6 +160,7 @@ public class UsuarioService {
 				throw new RegraNegocioException("Solicitante pode atualizar apenas a renda mensal neste cadastro.");
 			}
 			solicitante.setRendaMensal(request.rendaMensal());
+			solicitante.recalcularScoreCreditoSimulado();
 			return toResponse(usuario, solicitante, null);
 		}
 
@@ -227,6 +228,8 @@ public class UsuarioService {
 			administradorId,
 			contaBancariaId,
 			solicitante == null ? null : solicitante.getRendaMensal(),
+			solicitante == null ? null : solicitante.getScoreCreditoSimulado(),
+			solicitante == null ? null : solicitante.getNivelRisco(),
 			credor == null ? null : credor.getSaldoDisponivelSimulado(),
 			credor == null ? null : credor.getLimiteOperacoes()
 		);
@@ -244,6 +247,8 @@ public class UsuarioService {
 			administradorId,
 			contaBancariaId,
 			resolvedSolicitante == null ? null : resolvedSolicitante.getRendaMensal(),
+			resolvedSolicitante == null ? null : resolvedSolicitante.getScoreCreditoSimulado(),
+			resolvedSolicitante == null ? null : resolvedSolicitante.getNivelRisco(),
 			resolvedCredor == null ? null : resolvedCredor.getSaldoDisponivelSimulado(),
 			resolvedCredor == null ? null : resolvedCredor.getLimiteOperacoes()
 		);

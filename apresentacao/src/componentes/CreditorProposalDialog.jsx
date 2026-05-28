@@ -1,6 +1,14 @@
 import BankAccountNotice from './BankAccountNotice';
 import StatusBadge from './StatusBadge';
-import { formatCurrency, formatDate, formatDateTime, formatLabel, formatProposalHeadline } from '../biblioteca/format';
+import {
+  formatCreditScore,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatLabel,
+  formatProposalHeadline,
+  formatProposalNumber
+} from '../biblioteca/format';
 
 export default function CreditorProposalDialog({
   open,
@@ -36,7 +44,7 @@ export default function CreditorProposalDialog({
       >
         <header className="creditor-proposal-dialog-header">
           <div className="creditor-proposal-dialog-heading">
-            <h2 id="creditor-proposal-dialog-title">{'Ordem pronta para revis\u00e3o'}</h2>
+            <h2 id="creditor-proposal-dialog-title">{'Ordem pronta para contratação'}</h2>
           </div>
         </header>
 
@@ -51,6 +59,16 @@ export default function CreditorProposalDialog({
           <div className="creditor-proposal-dialog-info-card creditor-proposal-dialog-info-card-hero">
             <dt>Solicitante</dt>
             <dd>{headline}</dd>
+          </div>
+          <div className="creditor-proposal-dialog-info-card">
+            <dt>Score</dt>
+            <dd>{formatCreditScore(proposal.solicitanteScoreCredito)}</dd>
+          </div>
+          <div className="creditor-proposal-dialog-info-card">
+            <dt>Risco</dt>
+            <dd>
+              <StatusBadge value={proposal.solicitanteNivelRisco} />
+            </dd>
           </div>
           <div className="creditor-proposal-dialog-info-card">
             <dt>Status atual</dt>
@@ -75,7 +93,7 @@ export default function CreditorProposalDialog({
           </div>
           <div className="creditor-proposal-dialog-info-card">
             <dt>{'N\u00ba da proposta'}</dt>
-            <dd>#{proposal.id}</dd>
+            <dd>{formatProposalNumber(proposal)}</dd>
           </div>
         </dl>
 
@@ -124,7 +142,7 @@ export default function CreditorProposalDialog({
             onClick={onAccept}
             disabled={busy || !hasBankAccount}
           >
-            {busy ? 'Aceitando...' : 'Aceitar proposta'}
+            {busy ? 'Formalizando...' : 'Aceitar e formalizar contrato'}
           </button>
         </footer>
       </section>

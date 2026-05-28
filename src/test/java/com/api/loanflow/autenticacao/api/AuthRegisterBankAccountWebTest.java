@@ -68,6 +68,8 @@ class AuthRegisterBankAccountWebTest {
 			.andExpect(jsonPath("$.accessToken").isString())
 			.andExpect(jsonPath("$.usuario.email").value("maria.cadastro@loanflow.test"))
 			.andExpect(jsonPath("$.usuario.contaBancariaId").isNumber())
+			.andExpect(jsonPath("$.usuario.scoreCredito").value(75))
+			.andExpect(jsonPath("$.usuario.nivelRisco").value("BAIXO"))
 			.andExpect(jsonPath("$.usuario.solicitanteId").isNumber());
 	}
 

@@ -11,6 +11,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "solicitantes_credito")
@@ -61,10 +62,47 @@ public class SolicitanteCredito {
 	}
 
 	public Integer getScoreCreditoSimulado() {
-		return scoreCreditoSimulado;
+		return normalizarScore(scoreCreditoSimulado);
 	}
 
 	public void setScoreCreditoSimulado(Integer scoreCreditoSimulado) {
-		this.scoreCreditoSimulado = scoreCreditoSimulado;
+		this.scoreCreditoSimulado = normalizarScore(scoreCreditoSimulado);
+	}
+
+	public NivelRiscoCredito getNivelRisco() {
+		return NivelRiscoCredito.fromScore(getScoreCreditoSimulado());
+	}
+
+	public void recalcularScoreCreditoSimulado() {
+		setScoreCreditoSimulado(calcularScoreCreditoSimulado(rendaMensal));
+	}
+
+	public static int calcularScoreCreditoSimulado(BigDecimal rendaMensal) {
+		if (rendaMensal == null || rendaMensal.signum() <= 0) {
+			return 0;
+		}
+		if (rendaMensal.compareTo(new BigDecimal("5000.00")) >= 0) {
+			return 85;
+		}
+		if (rendaMensal.compareTo(new BigDecimal("3000.00")) >= 0) {
+			return 75;
+		}
+		if (rendaMensal.compareTo(new BigDecimal("1500.00")) >= 0) {
+			return 55;
+		}
+		return 35;
+	}
+
+	private Integer normalizarScore(Integer score) {
+		if (score == null) {
+			return null;
+		}
+		if (score > 100) {
+			return BigDecimal.valueOf(score)
+				.divide(BigDecimal.TEN, 0, RoundingMode.HALF_UP)
+				.min(BigDecimal.valueOf(100))
+				.intValue();
+		}
+		return Math.max(0, score);
 	}
 }

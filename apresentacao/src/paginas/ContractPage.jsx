@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import BankAccountNotice from '../componentes/BankAccountNotice';
-import ContractSignatureDialog from '../componentes/ContractSignatureDialog';
 import EmptyState from '../componentes/EmptyState';
 import MessageBanner from '../componentes/MessageBanner';
 import SectionCard from '../componentes/SectionCard';
@@ -9,9 +7,9 @@ import StatusBadge from '../componentes/StatusBadge';
 import UiIcon from '../componentes/UiIcon';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
-import { formatCurrency, formatDateTime, formatLabel } from '../biblioteca/format';
+import { formatCreditScore, formatCurrency, formatDateTime, formatLabel, formatProposalNumber } from '../biblioteca/format';
 
-const statusOptions = ['', 'AGUARDANDO_ASSINATURAS', 'ASSINADO_PARCIALMENTE', 'EXPIRADO', 'FORMALIZADO', 'CANCELADO'];
+const visibleContractStatus = 'FORMALIZADO';
 const purposeCategoryOptions = [
   { value: 'CAPITAL_DE_GIRO', label: 'Capital de giro' },
   { value: 'REFORMA', label: 'Reforma' },
@@ -22,12 +20,11 @@ const purposeCategoryOptions = [
   { value: 'OUTRA', label: 'Outra' }
 ];
 
-const signatureStatuses = ['AGUARDANDO_ASSINATURAS', 'ASSINADO_PARCIALMENTE'];
 const installmentOpenStatuses = ['ABERTA', 'PARCIALMENTE_PAGA', 'EM_ATRASO'];
 const contractsPerPage = 6;
 const emptyFilters = {
   numeroContrato: '',
-  status: '',
+  nomeContraparte: '',
   categoriaFinalidade: ''
 };
 
@@ -75,6 +72,19 @@ function formatLocalDate(value) {
   return localDateFormatter.format(parsed);
 }
 
+function formatCpf(value) {
+  if (!value) {
+    return '-';
+  }
+
+  const digits = value.toString().replace(/\D/g, '');
+  if (digits.length !== 11) {
+    return value;
+  }
+
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
 function getDaysUntil(value) {
   const parsed = toDateValue(value);
   if (!parsed || Number.isNaN(parsed.getTime())) {
@@ -114,16 +124,12 @@ function formatDueLabel(value) {
 }
 
 function getContractStatusTone(status) {
-  if (status === 'FORMALIZADO') {
+  if (status === 'FORMALIZADO' || status === 'QUITADO') {
     return 'success';
   }
 
   if (status === 'CANCELADO' || status === 'EXPIRADO') {
     return 'danger';
-  }
-
-  if (signatureStatuses.includes(status)) {
-    return 'warning';
   }
 
   return 'info';
@@ -153,99 +159,36 @@ function getInstallmentPill(installment) {
   return { label: 'Programada', tone: 'info' };
 }
 
-function getContractNextStep(contract, installmentOverview) {
-  if (!contract) {
-    return 'Selecione um contrato';
-  }
-
-  if (contract.status === 'AGUARDANDO_ASSINATURAS') {
-    return 'Validar identidade e coletar a primeira assinatura';
-  }
-
-  if (contract.status === 'ASSINADO_PARCIALMENTE') {
-    return 'Concluir a assinatura restante';
-  }
-
-  if (contract.status === 'FORMALIZADO') {
-    return installmentOverview.nextInstallment
-      ? `Acompanhar a parcela ${installmentOverview.nextInstallment.numero}`
-      : 'Acompanhar a carteira de parcelas';
-  }
-
-  if (contract.status === 'EXPIRADO') {
-    return 'Prazo de assinatura encerrado';
-  }
-
-  if (contract.status === 'CANCELADO') {
-    return 'Fluxo encerrado';
-  }
-
-  return 'Monitorar evolucao do contrato';
-}
-
-function getPermissionSummary({ selectedContract, canSignSelected, canCancelSelected, hasBankAccount }) {
-  if (!selectedContract) {
-    return 'Selecione um contrato para ver o que o seu perfil pode fazer.';
-  }
-
-  if (canSignSelected && !hasBankAccount) {
-    return 'O aceite esta disponivel, mas a conta bancaria precisa ser cadastrada antes da assinatura.';
-  }
-
-  if (canSignSelected && canCancelSelected) {
-    return 'Seu perfil pode reautenticar, assinar o documento ou encerrar o fluxo antes da formalizacao.';
-  }
-
-  if (canSignSelected) {
-    return 'Sua assinatura e a proxima acao esperada para este contrato.';
-  }
-
-  if (canCancelSelected) {
-    return 'Seu perfil pode cancelar o contrato caso o fluxo precise ser interrompido.';
-  }
-
-  if (selectedContract.status === 'FORMALIZADO') {
-    return 'Nenhuma acao contratual pendente. O acompanhamento segue na agenda de parcelas.';
-  }
-
-  if (selectedContract.status === 'EXPIRADO') {
-    return selectedContract.motivoExpiracao || 'O contrato expirou e agora fica disponivel apenas para consulta.';
-  }
-
-  if (selectedContract.status === 'CANCELADO') {
-    return 'Contrato disponivel apenas para leitura e historico.';
-  }
-
-  return 'Nao ha operacoes liberadas para o seu perfil neste momento.';
-}
-
 function getContractListMeta(contract) {
   const lifecycleLabel = contract.dataFormalizacao
     ? `Formalizado em ${formatDateTime(contract.dataFormalizacao)}`
-    : contract.dataExpiracaoAssinatura
-      ? `Aceite ate ${formatDateTime(contract.dataExpiracaoAssinatura)}`
-      : `Gerado em ${formatDateTime(contract.dataGeracao)}`;
+    : `Gerado em ${formatDateTime(contract.dataGeracao)}`;
 
-  return `Proposta #${contract.propostaId} | ${formatCurrency(contract.valorTotalComJuros)} | ${lifecycleLabel}`;
+  return `Proposta ${formatProposalNumber(contract)} | ${formatCurrency(contract.valorTotalComJuros)} | ${lifecycleLabel}`;
+}
+
+function getCounterpartySummary(contract, { isCredor, isSolicitante }) {
+  if (isCredor) {
+    return contract.solicitanteNome ? `Solicitante: ${contract.solicitanteNome}` : '';
+  }
+
+  if (isSolicitante) {
+    return contract.credorNome ? `Credor: ${contract.credorNome}` : '';
+  }
+
+  return [
+    contract.solicitanteNome && `Solicitante: ${contract.solicitanteNome}`,
+    contract.credorNome && `Credor: ${contract.credorNome}`
+  ]
+    .filter(Boolean)
+    .join(' | ');
 }
 
 function ContractDetailsDialog({
   open,
   contract,
   tone,
-  nextStepLabel,
-  permissionSummary,
-  purpose,
-  expiryLabel,
-  documentName,
-  canSignSelected,
   canCancelSelected,
-  signatureChallenge,
-  challengeExpiryLabel,
-  signatureBusy,
-  hasBankAccount,
-  financeHeadline,
-  financeDescription,
   installmentOverview,
   installmentsLoading,
   installmentsError,
@@ -253,19 +196,43 @@ function ContractDetailsDialog({
   onClose,
   onDownload,
   onCopyHash,
-  onOpenSignatureDialog,
   onCancelContract
 }) {
   if (!open || !contract) {
     return null;
   }
 
+  const lifecycleLabel = contract.dataFormalizacao ? 'Formalizado em' : 'Gerado em';
+  const lifecycleValue = contract.dataFormalizacao ? formatDateTime(contract.dataFormalizacao) : formatDateTime(contract.dataGeracao);
+  const proposalNumber = formatProposalNumber(contract);
+  const nextInstallment = installmentOverview.nextInstallment;
+  const hasInstallments = installmentOverview.total > 0;
+  const installmentsTotalLabel = installmentsLoading
+    ? '--'
+    : hasInstallments
+      ? `${installmentOverview.total} parcela(s)`
+      : 'Nao gerado';
+  const nextInstallmentLabel = installmentsLoading
+    ? '--'
+    : nextInstallment
+      ? `Parcela ${nextInstallment.numero}`
+      : hasInstallments
+        ? '-'
+        : 'Cronograma pendente';
+  const nextInstallmentMeta = installmentsLoading
+    ? 'Atualizando'
+    : nextInstallment
+      ? `${formatCurrency(nextInstallment.valorPrevisto)} | ${formatLocalDate(nextInstallment.dataVencimento)}`
+      : hasInstallments
+        ? 'Sem parcela aberta'
+        : 'Parcelas ainda nao geradas';
+
   return (
     <div
       className="contract-details-dialog-backdrop"
       role="presentation"
       onClick={(event) => {
-        if (event.target === event.currentTarget && !signatureBusy) {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -279,220 +246,229 @@ function ContractDetailsDialog({
         <header className="contract-details-dialog-header">
           <div className="contract-details-dialog-heading">
             <span className="contract-detail-label">Carteira de contratos</span>
-            <h2 id="contract-details-dialog-title">Detalhes operacionais do contrato</h2>
-            <p>Revise o documento, acompanhe o cronograma e execute a proxima acao sem sair da carteira.</p>
+            <div className="contract-details-dialog-title-row">
+              <h2 id="contract-details-dialog-title">{contract.numeroContrato}</h2>
+              <StatusBadge value={contract.status} />
+            </div>
           </div>
 
-          <button
-            type="button"
-            className="contract-details-dialog-close"
-            onClick={onClose}
-            disabled={signatureBusy}
-          >
-            <UiIcon name="x" size={18} />
-            Fechar
-          </button>
+          <div className="contract-details-dialog-header-actions">
+            <button
+              type="button"
+              className="contract-details-dialog-close"
+              onClick={onClose}
+            >
+              <UiIcon name="x" size={18} />
+              Fechar
+            </button>
+          </div>
         </header>
 
         <div className="contract-details-dialog-body">
-          <section className={`contract-selection-panel contract-tone-${tone}`}>
-            <div className="contract-selection-header">
-              <div className="contract-selection-copy">
-                <span className="contract-detail-label">Visao geral do contrato</span>
-                <h2>{contract.numeroContrato}</h2>
-                <p>{purpose}</p>
+          <article className={`contract-selection-panel contract-tone-${tone} contract-simple-panel`}>
+            <div className="contract-simple-toolbar">
+              <div className="contract-simple-title">
+                <span className="contract-detail-label">Contrato selecionado</span>
+                <strong>{contract.finalidade || 'Sem finalidade informada'}</strong>
               </div>
-              <div className="contract-selection-status">
-                <StatusBadge value={contract.status} />
-                <span className="contract-utility-badge">Proposta #{contract.propostaId}</span>
-              </div>
-            </div>
 
-            <dl className="detail-grid contract-selection-grid">
-              <div>
-                <dt>Status do fluxo</dt>
-                <dd>{formatLabel(contract.status)}</dd>
-              </div>
-              <div>
-                <dt>Gerado em</dt>
-                <dd>{formatDateTime(contract.dataGeracao)}</dd>
-              </div>
-              <div>
-                <dt>{contract.dataFormalizacao ? 'Formalizado em' : 'Prazo do aceite'}</dt>
-                <dd>
-                  {contract.dataFormalizacao
-                    ? formatDateTime(contract.dataFormalizacao)
-                    : expiryLabel}
-                </dd>
-              </div>
-              <div className="detail-span-2">
-                <dt>Proxima acao esperada</dt>
-                <dd>{nextStepLabel}</dd>
-              </div>
-            </dl>
+              <div className="contract-simple-actions">
+                <button type="button" className="secondary-button" onClick={onDownload}>
+                  <UiIcon name="file" size={16} />
+                  Baixar PDF
+                </button>
 
-            <div className="contract-command-actions">
-              <button type="button" className="secondary-button" onClick={onDownload}>
-                <UiIcon name="file" size={16} />
-                Baixar PDF
-              </button>
-
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={onCopyHash}
-                disabled={!contract.hashDocumento}
-              >
-                <UiIcon name="shield-check" size={16} />
-                Copiar hash
-              </button>
-
-              {canCancelSelected ? (
                 <button
                   type="button"
-                  className="danger-button"
-                  onClick={onCancelContract}
-                >
-                  <UiIcon name="ban" size={16} />
-                  Cancelar contrato
-                </button>
-              ) : null}
-            </div>
-          </section>
-
-          <div className="contract-detail-panels">
-            <article className="contract-document-card contract-document-card-soft">
-              <span className="contract-detail-label">Assinaturas</span>
-              {canSignSelected ? (
-                <div className="contract-signature-shell">
-                  <div className="contract-signature-head">
-                    <div>
-                      <strong>Abra o desafio guiado antes do aceite final</strong>
-                      <p className="helper-text">
-                        O aceite acontece em duas etapas: iniciar o desafio e confirmar a assinatura com senha atual
-                        ou codigo temporario, sempre dentro do prazo do contrato.
-                      </p>
-                    </div>
-                    {signatureChallenge ? (
-                      <span className="contract-signature-chip">Desafio ativo ate {challengeExpiryLabel}</span>
-                    ) : null}
-                  </div>
-
-                  <div className="contract-signature-actions">
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={onOpenSignatureDialog}
-                      disabled={signatureBusy || !hasBankAccount}
-                    >
-                      <UiIcon name="signature" size={16} />
-                      {signatureChallenge ? 'Continuar desafio' : 'Abrir assinatura guiada'}
-                    </button>
-                  </div>
-
-                  {signatureChallenge ? (
-                    <p className="helper-text contract-signature-helper">
-                      Desafio iniciado. Finalize o aceite ate {challengeExpiryLabel}.
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="contract-signature-readonly">
-                  <strong>Assinatura sem acao pendente para este perfil</strong>
-                  <p className="helper-text">{permissionSummary}</p>
-                  {contract.status === 'ASSINADO_PARCIALMENTE' ? (
-                    <p className="helper-text">
-                      Uma assinatura ja foi concluida. Falta o aceite restante para formalizar o contrato.
-                    </p>
-                  ) : null}
-                </div>
-              )}
-            </article>
-
-            <article className="contract-document-card contract-document-card-soft">
-              <span className="contract-detail-label">Documento</span>
-              <strong>{documentName}</strong>
-              <p className="helper-text">
-                PDF autenticado disponivel para download e conferencia durante o acompanhamento do contrato.
-              </p>
-              <code className="code-box contract-inline-code">
-                {contract.hashDocumento || 'Hash indisponivel para este contrato.'}
-              </code>
-            </article>
-
-            <section className="contract-document-card contract-document-card-soft contract-finance-card">
-              <div className="contract-finance-card-head">
-                <div>
-                  <span className="contract-detail-label">Parcelas</span>
-                  <strong>{financeHeadline}</strong>
-                  <p>{financeDescription}</p>
-                </div>
-                <span className="contract-utility-badge">
-                  {installmentsLoading ? 'Atualizando agenda' : `${installmentOverview.total} parcela(s)`}
-                </span>
-              </div>
-
-              <div className="contract-finance-metrics">
-                <article className="contract-finance-metric">
-                  <span>Total com juros</span>
-                  <strong>{formatCurrency(contractTotalWithInterest)}</strong>
-                </article>
-                <article className="contract-finance-metric">
-                  <span>Pago ate agora</span>
-                  <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.paidValue)}</strong>
-                </article>
-                <article className="contract-finance-metric">
-                  <span>Em aberto</span>
-                  <strong>{installmentsLoading ? '--' : installmentOverview.open}</strong>
-                </article>
-                <article className="contract-finance-metric">
-                  <span>Em atraso</span>
-                  <strong>{installmentsLoading ? '--' : installmentOverview.overdue}</strong>
-                </article>
-              </div>
-
-              {installmentsError ? <p className="helper-text">{installmentsError}</p> : null}
-
-              {installmentsLoading ? (
-                <p className="helper-text">Carregando cronograma de parcelas...</p>
-              ) : installmentOverview.preview.length ? (
-                <div className="contract-finance-feed">
-                  {installmentOverview.preview.map((installment) => {
-                    const pill = getInstallmentPill(installment);
-
-                    return (
-                      <article key={installment.id} className="contract-installment-item">
-                        <div className="contract-installment-copy">
-                          <strong>Parcela {installment.numero}</strong>
-                          <p>{formatDueLabel(installment.dataVencimento)}</p>
-                        </div>
-                        <div className="contract-installment-meta">
-                          <span className={`contract-pill tone-${pill.tone}`}>{pill.label}</span>
-                          <strong>{formatCurrency(installment.valorPrevisto)}</strong>
-                          <small>{formatLocalDate(installment.dataVencimento)}</small>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <EmptyState
-                  title="Sem parcelas carregadas."
-                  description="As parcelas aparecem aqui assim que o contrato avancar para a etapa financeira."
-                />
-              )}
-
-              <div className="contract-panel-footer">
-                <Link
                   className="secondary-button"
-                  to={`/parcelas?numeroContrato=${encodeURIComponent(contract.numeroContrato)}`}
+                  onClick={onCopyHash}
+                  disabled={!contract.hashDocumento}
                 >
-                  <UiIcon name="stack" size={16} />
-                  Abrir cronograma completo
-                </Link>
+                  <UiIcon name="shield-check" size={16} />
+                  Copiar hash
+                </button>
+
+                {canCancelSelected ? (
+                  <button
+                    type="button"
+                    className="danger-button"
+                    onClick={onCancelContract}
+                  >
+                    <UiIcon name="ban" size={16} />
+                    Cancelar contrato
+                  </button>
+                ) : null}
               </div>
-            </section>
-          </div>
+            </div>
+
+            <div className="contract-simple-stats">
+              <article className="contract-simple-stat">
+                <span>Proposta</span>
+                <strong>{proposalNumber}</strong>
+              </article>
+              <article className="contract-simple-stat">
+                <span>{lifecycleLabel}</span>
+                <strong>{lifecycleValue}</strong>
+              </article>
+              <article className="contract-simple-stat">
+                <span>Proxima parcela</span>
+                <strong>{nextInstallmentLabel}</strong>
+                <small>{nextInstallmentMeta}</small>
+              </article>
+            </div>
+
+            <div className="contract-simple-grid">
+              <section className="contract-simple-section contract-simple-section-wide contract-parties-section">
+                <span className="contract-detail-label">Partes</span>
+                <div className="contract-party-grid">
+                  <article className="contract-party-card">
+                    <div className="contract-party-card-head">
+                      <span className="contract-party-icon">
+                        <UiIcon name="user" size={18} />
+                      </span>
+                      <div>
+                        <span>Solicitante</span>
+                        <strong>{contract.solicitanteNome || '-'}</strong>
+                      </div>
+                    </div>
+
+                    <dl className="contract-party-dl">
+                      <div>
+                        <dt>CPF</dt>
+                        <dd>{formatCpf(contract.solicitanteCpf)}</dd>
+                      </div>
+                      <div>
+                        <dt>E-mail</dt>
+                        <dd>{contract.solicitanteEmail || '-'}</dd>
+                      </div>
+                      <div>
+                        <dt>Telefone</dt>
+                        <dd>{contract.solicitanteTelefone || '-'}</dd>
+                      </div>
+                      <div>
+                        <dt>Renda mensal</dt>
+                        <dd>{formatCurrency(contract.solicitanteRendaMensal)}</dd>
+                      </div>
+                      <div>
+                        <dt>Score</dt>
+                        <dd>{formatCreditScore(contract.solicitanteScoreCredito)}</dd>
+                      </div>
+                      <div>
+                        <dt>Risco</dt>
+                        <dd>{formatLabel(contract.solicitanteNivelRisco)}</dd>
+                      </div>
+                    </dl>
+                  </article>
+
+                  <article className="contract-party-card">
+                    <div className="contract-party-card-head">
+                      <span className="contract-party-icon">
+                        <UiIcon name="bank" size={18} />
+                      </span>
+                      <div>
+                        <span>Credor</span>
+                        <strong>{contract.credorNome || '-'}</strong>
+                      </div>
+                    </div>
+
+                    <dl className="contract-party-dl">
+                      <div>
+                        <dt>CPF</dt>
+                        <dd>{formatCpf(contract.credorCpf)}</dd>
+                      </div>
+                      <div>
+                        <dt>E-mail</dt>
+                        <dd>{contract.credorEmail || '-'}</dd>
+                      </div>
+                      <div>
+                        <dt>Telefone</dt>
+                        <dd>{contract.credorTelefone || '-'}</dd>
+                      </div>
+                      <div>
+                        <dt>Banco</dt>
+                        <dd>{contract.credorBanco || '-'}</dd>
+                      </div>
+                      <div>
+                        <dt>Total emprestado</dt>
+                        <dd>{formatCurrency(contract.credorTotalEmprestadoSimulado)}</dd>
+                      </div>
+                      <div>
+                        <dt>Chave Pix</dt>
+                        <dd>{contract.credorChavePix || '-'}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                </div>
+              </section>
+
+              <section className="contract-simple-section contract-simple-section-wide contract-financial-section">
+                <div className="contract-simple-section-head">
+                  <span className="contract-detail-label">Financeiro</span>
+                </div>
+
+                <div className="contract-finance-metrics">
+                  <article className="contract-finance-metric">
+                    <span>Total com juros</span>
+                    <strong>{formatCurrency(contractTotalWithInterest)}</strong>
+                  </article>
+                  <article className="contract-finance-metric">
+                    <span>Pago ate agora</span>
+                    <strong>{installmentsLoading ? '--' : formatCurrency(installmentOverview.paidValue)}</strong>
+                  </article>
+                  <article className="contract-finance-metric">
+                    <span>Em aberto</span>
+                    <strong>{installmentsLoading ? '--' : installmentOverview.open}</strong>
+                  </article>
+                  <article className="contract-finance-metric">
+                    <span>Em atraso</span>
+                    <strong>{installmentsLoading ? '--' : installmentOverview.overdue}</strong>
+                  </article>
+                </div>
+
+                {installmentsError ? <p className="helper-text">{installmentsError}</p> : null}
+
+                {installmentsLoading ? (
+                  <p className="helper-text">Carregando parcelas...</p>
+                ) : installmentOverview.preview.length ? (
+                  <div className="contract-finance-feed">
+                    {installmentOverview.preview.map((installment) => {
+                      const pill = getInstallmentPill(installment);
+
+                      return (
+                        <article key={installment.id} className="contract-installment-item">
+                          <div className="contract-installment-copy">
+                            <strong>Parcela {installment.numero}</strong>
+                            <p>{formatDueLabel(installment.dataVencimento)}</p>
+                          </div>
+                          <div className="contract-installment-meta">
+                            <span className={`contract-pill tone-${pill.tone}`}>{pill.label}</span>
+                            <strong>{formatCurrency(installment.valorPrevisto)}</strong>
+                            <small>{formatLocalDate(installment.dataVencimento)}</small>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <EmptyState
+                    title="Sem parcelas carregadas."
+                    description="Sem registros de parcelas para este contrato."
+                  />
+                )}
+
+                <div className="contract-panel-footer">
+                  <Link
+                    className="secondary-button"
+                    to={`/parcelas?numeroContrato=${encodeURIComponent(contract.numeroContrato)}`}
+                  >
+                    <UiIcon name="stack" size={16} />
+                    Abrir cronograma completo
+                  </Link>
+                </div>
+              </section>
+
+            </div>
+          </article>
         </div>
       </section>
     </div>
@@ -500,7 +476,7 @@ function ContractDetailsDialog({
 }
 
 export default function ContractPage() {
-  const { token, hasRole, hasBankAccount } = useAuth();
+  const { token, hasRole } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const highlightedContractId =
@@ -508,7 +484,7 @@ export default function ContractPage() {
   const [filters, setFilters] = useState({
     ...emptyFilters,
     numeroContrato: searchParams.get('numeroContrato') || '',
-    status: searchParams.get('status') || '',
+    nomeContraparte: searchParams.get('nomeContraparte') || '',
     categoriaFinalidade: searchParams.get('categoriaFinalidade') || ''
   });
   const [contracts, setContracts] = useState([]);
@@ -521,12 +497,13 @@ export default function ContractPage() {
   const [installmentsLoading, setInstallmentsLoading] = useState(false);
   const [installmentsError, setInstallmentsError] = useState('');
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
-  const [signatureChallenge, setSignatureChallenge] = useState(null);
-  const [signatureBusy, setSignatureBusy] = useState(false);
 
-  const canSign = hasRole('SOLICITANTE') || hasRole('CREDOR');
   const canCancel = hasRole('CREDOR') || hasRole('ADMIN');
+  const isCredor = hasRole('CREDOR');
+  const isSolicitante = hasRole('SOLICITANTE');
+  const showCounterpartyFilter = isCredor || isSolicitante;
+  const counterpartyFilterLabel = isCredor ? 'Nome do solicitante' : 'Nome do credor';
+  const counterpartyFilterPlaceholder = isCredor ? 'Ex.: Maria Silva' : 'Ex.: Credor Financeiro';
 
   const selectedContract = useMemo(
     () => contracts.find((contract) => contract.id === selectedContractId) ?? null,
@@ -601,57 +578,20 @@ export default function ContractPage() {
   }, [contractInstallments]);
 
   const selectedContractTone = selectedContract ? getContractStatusTone(selectedContract.status) : 'info';
-  const canSignSelected = Boolean(selectedContract && canSign && signatureStatuses.includes(selectedContract.status));
   const canCancelSelected = Boolean(
-    selectedContract && canCancel && !['FORMALIZADO', 'CANCELADO'].includes(selectedContract.status)
+    selectedContract && canCancel && !['FORMALIZADO', 'QUITADO', 'CANCELADO'].includes(selectedContract.status)
   );
-  const nextStepLabel = getContractNextStep(selectedContract, installmentOverview);
-  const permissionSummary = getPermissionSummary({
-    selectedContract,
-    canSignSelected,
-    canCancelSelected,
-    hasBankAccount
-  });
-  const selectedContractPurpose =
-    selectedContract?.finalidade || 'Contrato gerado na plataforma para continuidade do fluxo operacional.';
-  const selectedContractExpiryLabel = selectedContract?.dataExpiracaoAssinatura
-    ? formatDateTime(selectedContract.dataExpiracaoAssinatura)
-    : 'Sem prazo informado';
-  const selectedContractDocumentName = selectedContract?.pdfPath || 'PDF nao disponivel';
-  const challengeExpiryLabel = signatureChallenge?.expiraEm ? formatDateTime(signatureChallenge.expiraEm) : null;
-  const contractFinanceHeadline = installmentsLoading
-    ? 'Atualizando cronograma'
-    : installmentOverview.nextInstallment
-      ? `Parcela ${installmentOverview.nextInstallment.numero}`
-      : installmentOverview.total
-        ? `${installmentOverview.total} parcela(s)`
-        : 'Sem agenda financeira';
   const contractTotalWithInterest =
     installmentOverview.totalValue > 0
       ? installmentOverview.totalValue
       : selectedContract?.valorTotalComJuros;
-  const contractFinanceDescription = installmentsLoading
-    ? 'Carregando a agenda financeira deste contrato.'
-    : installmentOverview.nextInstallment
-      ? `${formatDueLabel(installmentOverview.nextInstallment.dataVencimento)} | ${formatCurrency(
-          installmentOverview.nextInstallment.valorPrevisto
-        )}`
-      : installmentOverview.total
-        ? `${installmentOverview.open} em aberto e ${installmentOverview.overdue} em atraso.`
-        : 'As parcelas aparecem aqui quando o contrato entrar na etapa financeira.';
-
-  const resetSignatureFlow = () => {
-    setSignatureChallenge(null);
-    setSignatureBusy(false);
-  };
-
   const syncSearchParams = (nextFilters, contractId = null) => {
     const next = new URLSearchParams();
     if (nextFilters.numeroContrato) {
       next.set('numeroContrato', nextFilters.numeroContrato);
     }
-    if (nextFilters.status) {
-      next.set('status', nextFilters.status);
+    if (nextFilters.nomeContraparte) {
+      next.set('nomeContraparte', nextFilters.nomeContraparte);
     }
     if (nextFilters.categoriaFinalidade) {
       next.set('categoriaFinalidade', nextFilters.categoriaFinalidade);
@@ -672,14 +612,16 @@ export default function ContractPage() {
     try {
       const data = await api.searchContracts(token, {
         numeroContrato: currentFilters.numeroContrato || undefined,
-        status: currentFilters.status || undefined,
+        nomeContraparte: currentFilters.nomeContraparte || undefined,
+        status: visibleContractStatus,
         categoriaFinalidade: currentFilters.categoriaFinalidade || undefined
       });
-      setContracts(data);
+      const formalizedContracts = (data ?? []).filter((contract) => contract.status === visibleContractStatus);
+      setContracts(formalizedContracts);
 
-      const nextSelectedId = data.find((contract) => contract.id === preferredContractId)?.id ?? null;
+      const nextSelectedId = formalizedContracts.find((contract) => contract.id === preferredContractId)?.id ?? null;
       setSelectedContractId(nextSelectedId);
-      setContractPage(getPageForContract(data, nextSelectedId));
+      setContractPage(getPageForContract(formalizedContracts, nextSelectedId));
       if (nextSelectedId) {
         window.localStorage.setItem('loanflow.lastContractId', String(nextSelectedId));
       }
@@ -696,11 +638,6 @@ export default function ContractPage() {
   useEffect(() => {
     loadContracts(filters, highlightedContractId);
   }, [token]);
-
-  useEffect(() => {
-    setSignatureDialogOpen(false);
-    resetSignatureFlow();
-  }, [selectedContract?.id, selectedContract?.status]);
 
   useEffect(() => {
     if (detailsDialogOpen && !selectedContract) {
@@ -728,9 +665,6 @@ export default function ContractPage() {
   };
 
   const handleCloseDetailsDialog = () => {
-    if (signatureBusy) {
-      return;
-    }
     setDetailsDialogOpen(false);
   };
 
@@ -752,68 +686,6 @@ export default function ContractPage() {
     }
   };
 
-  const handleOpenSignatureDialog = () => {
-    setError('');
-    setFeedback('');
-    setSignatureDialogOpen(true);
-  };
-
-  const handleCloseSignatureDialog = () => {
-    if (signatureBusy) {
-      return;
-    }
-    setSignatureDialogOpen(false);
-    resetSignatureFlow();
-  };
-
-  const handleStartSignatureChallenge = async (method) => {
-    if (!selectedContract?.id) {
-      return;
-    }
-
-    setError('');
-    setFeedback('');
-    setSignatureBusy(true);
-
-    try {
-      const challenge = await api.startContractSignatureChallenge(token, selectedContract.id, {
-        metodo: method
-      });
-      setSignatureChallenge(challenge);
-      setFeedback(challenge.mensagem || 'Desafio iniciado para a assinatura.');
-    } catch (challengeError) {
-      setError(challengeError.message);
-    } finally {
-      setSignatureBusy(false);
-    }
-  };
-
-  const handleConfirmSignature = async (codigo) => {
-    if (!selectedContract?.id || !signatureChallenge?.desafioId) {
-      return;
-    }
-
-    setError('');
-    setFeedback('');
-    setSignatureBusy(true);
-
-    try {
-      await api.signContract(token, selectedContract.id, {
-        aceite: true,
-        desafioId: signatureChallenge.desafioId,
-        codigo
-      });
-      setFeedback('Assinatura registrada.');
-      setSignatureDialogOpen(false);
-      resetSignatureFlow();
-      await loadContracts(filters, selectedContract?.id ?? selectedContractId);
-    } catch (signError) {
-      setError(signError.message);
-    } finally {
-      setSignatureBusy(false);
-    }
-  };
-
   const handleDownload = async () => {
     if (!selectedContract?.id) {
       return;
@@ -824,7 +696,7 @@ export default function ContractPage() {
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `contrato-${selectedContract.id}.pdf`;
+      link.download = `${selectedContract.numeroContrato || `contrato-${selectedContract.id}`}.pdf`;
       link.click();
       window.URL.revokeObjectURL(blobUrl);
     } catch (downloadError) {
@@ -854,16 +726,11 @@ export default function ContractPage() {
       <div className="contracts-feedback-stack">
         <MessageBanner type="error">{error}</MessageBanner>
         <MessageBanner type="success">{feedback}</MessageBanner>
-        <BankAccountNotice
-          show={canSign && !hasBankAccount}
-          message="Cadastre uma conta bancaria no painel antes de assinar contratos."
-        />
       </div>
 
       <SectionCard
         className="creditor-order-section contract-catalog-section"
         title="Contratos em carteira"
-        subtitle="Selecione um contrato para revisar documento, assinatura e acompanhamento financeiro."
       >
         <div className="filters-row">
           <label>
@@ -872,19 +739,20 @@ export default function ContractPage() {
               name="numeroContrato"
               value={filters.numeroContrato}
               onChange={handleFilterChange}
-              placeholder="Ex.: LF-123"
+              placeholder="Ex.: LF-2026-000123"
             />
           </label>
-          <label>
-            Status
-            <select name="status" value={filters.status} onChange={handleFilterChange}>
-              {statusOptions.map((status) => (
-                <option key={status || 'all'} value={status}>
-                  {status ? formatLabel(status) : 'Todos'}
-                </option>
-              ))}
-            </select>
-          </label>
+          {showCounterpartyFilter ? (
+            <label>
+              {counterpartyFilterLabel}
+              <input
+                name="nomeContraparte"
+                value={filters.nomeContraparte}
+                onChange={handleFilterChange}
+                placeholder={counterpartyFilterPlaceholder}
+              />
+            </label>
+          ) : null}
           <label>
             Categoria
             <select
@@ -917,6 +785,10 @@ export default function ContractPage() {
             <div className="list-stack">
               {visibleContracts.map((contract) => {
                 const isContractSelected = selectedContractId === contract.id && detailsDialogOpen;
+                const counterpartySummary = getCounterpartySummary(contract, { isCredor, isSolicitante });
+                const contractListSummary = [counterpartySummary, getContractListMeta(contract)]
+                  .filter(Boolean)
+                  .join(' | ');
 
                 return (
                   <article
@@ -926,7 +798,7 @@ export default function ContractPage() {
                     <div>
                       <strong>{contract.numeroContrato}</strong>
                       <p>{contract.finalidade || 'Sem finalidade informada para este contrato.'}</p>
-                      <small>{getContractListMeta(contract)}</small>
+                      <small>{contractListSummary}</small>
                     </div>
 
                     <div className="stack-actions">
@@ -990,19 +862,7 @@ export default function ContractPage() {
         open={detailsDialogOpen}
         contract={selectedContract}
         tone={selectedContractTone}
-        nextStepLabel={nextStepLabel}
-        permissionSummary={permissionSummary}
-        purpose={selectedContractPurpose}
-        expiryLabel={selectedContractExpiryLabel}
-        documentName={selectedContractDocumentName}
-        canSignSelected={canSignSelected}
         canCancelSelected={canCancelSelected}
-        signatureChallenge={signatureChallenge}
-        challengeExpiryLabel={challengeExpiryLabel}
-        signatureBusy={signatureBusy}
-        hasBankAccount={hasBankAccount}
-        financeHeadline={contractFinanceHeadline}
-        financeDescription={contractFinanceDescription}
         installmentOverview={installmentOverview}
         installmentsLoading={installmentsLoading}
         installmentsError={installmentsError}
@@ -1010,19 +870,7 @@ export default function ContractPage() {
         onClose={handleCloseDetailsDialog}
         onDownload={handleDownload}
         onCopyHash={handleCopyHash}
-        onOpenSignatureDialog={handleOpenSignatureDialog}
         onCancelContract={() => runAction(() => api.cancelContract(token, selectedContract.id), 'Contrato cancelado.')}
-      />
-
-      <ContractSignatureDialog
-        open={signatureDialogOpen}
-        contract={selectedContract}
-        busy={signatureBusy}
-        challenge={signatureChallenge}
-        hasBankAccount={hasBankAccount}
-        onClose={handleCloseSignatureDialog}
-        onStartChallenge={handleStartSignatureChallenge}
-        onConfirmSignature={handleConfirmSignature}
       />
     </div>
   );

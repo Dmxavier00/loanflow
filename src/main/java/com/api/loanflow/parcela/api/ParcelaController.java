@@ -37,7 +37,7 @@ public class ParcelaController {
 	}
 
 	@GetMapping("/contratos/{contratoId}/parcelas")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('SOLICITANTE','CREDOR','ADMIN')")
 	public List<ParcelaResponse> listarPorContrato(@PathVariable Long contratoId) {
 		return parcelaService.listarPorContrato(contratoId);
 	}

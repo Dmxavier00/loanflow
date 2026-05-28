@@ -579,7 +579,7 @@ export default function RegisterPage() {
             <div className="form-span-2 login-hint">
               <strong>Conta bancária inicial</strong>
               <span>
-                Esses dados entram logo no cadastro para liberar propostas, aceite e assinatura
+                Esses dados entram logo no cadastro para liberar propostas, aceite e contratos
                 sem exigir uma etapa extra depois do primeiro login.
               </span>
             </div>

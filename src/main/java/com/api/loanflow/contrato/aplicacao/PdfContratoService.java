@@ -53,6 +53,17 @@ public class PdfContratoService {
 		}
 	}
 
+	public void excluirPdfSeExistir(String pdfPath) {
+		if (pdfPath == null || pdfPath.isBlank()) {
+			return;
+		}
+		try {
+			Files.deleteIfExists(resolvePdfPath(pdfPath));
+		} catch (IOException exception) {
+			// Migrações legadas não devem falhar por arquivo antigo já inexistente ou bloqueado.
+		}
+	}
+
 	private Path resolvePdfPath(String pdfPath) {
 		var storedPath = Path.of(pdfPath).normalize();
 		var fileName = storedPath.getFileName();
@@ -110,6 +121,13 @@ public class PdfContratoService {
 			if (!titleAssigned) {
 				blocks.add(new Block(BlockType.TITLE, line, ""));
 				titleAssigned = true;
+				continue;
+			}
+			if ("<!-- page-break -->".equalsIgnoreCase(line)) {
+				blocks.add(new Block(BlockType.PAGE_BREAK, "", ""));
+				continue;
+			}
+			if (line.startsWith("<!--") && line.endsWith("-->")) {
 				continue;
 			}
 			if (line.startsWith("# ")) {
@@ -266,6 +284,7 @@ public class PdfContratoService {
 		BULLET,
 		NOTE,
 		PARAGRAPH,
+		PAGE_BREAK,
 		SPACER
 	}
 
@@ -291,20 +310,19 @@ public class PdfContratoService {
 		private static final float MARGIN_LEFT = 48f;
 		private static final float MARGIN_RIGHT = 48f;
 		private static final float CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
-		private static final float HEADER_HEIGHT = 74f;
+		private static final float HEADER_HEIGHT = 66f;
 		private static final float FOOTER_HEIGHT = 36f;
-		private static final float CONTENT_TOP_Y = PAGE_HEIGHT - HEADER_HEIGHT - 32f;
+		private static final float CONTENT_TOP_Y = PAGE_HEIGHT - HEADER_HEIGHT - 28f;
 		private static final float CONTENT_BOTTOM_Y = FOOTER_HEIGHT + 20f;
 		private static final float KEY_LABEL_WIDTH = 152f;
 
-		private static final PdfColor PRIMARY = new PdfColor(0.11f, 0.18f, 0.33f);
-		private static final PdfColor PRIMARY_DARK = new PdfColor(0.08f, 0.12f, 0.23f);
-		private static final PdfColor ACCENT = new PdfColor(0.23f, 0.43f, 0.68f);
-		private static final PdfColor TEXT = new PdfColor(0.17f, 0.20f, 0.24f);
-		private static final PdfColor MUTED = new PdfColor(0.42f, 0.47f, 0.54f);
-		private static final PdfColor BORDER = new PdfColor(0.82f, 0.85f, 0.89f);
-		private static final PdfColor WHITE = new PdfColor(1f, 1f, 1f);
-		private static final PdfColor NOTE_FILL = new PdfColor(0.94f, 0.97f, 0.99f);
+		private static final PdfColor PRIMARY = new PdfColor(0.08f, 0.13f, 0.29f);
+		private static final PdfColor ACCENT = new PdfColor(0.18f, 0.45f, 0.91f);
+		private static final PdfColor TEXT = new PdfColor(0.16f, 0.18f, 0.23f);
+		private static final PdfColor MUTED = new PdfColor(0.45f, 0.50f, 0.59f);
+		private static final PdfColor BORDER = new PdfColor(0.84f, 0.88f, 0.94f);
+		private static final PdfColor HEADER_FILL = new PdfColor(0.96f, 0.98f, 1f);
+		private static final PdfColor NOTE_FILL = new PdfColor(0.97f, 0.99f, 1f);
 
 		private final String numeroContrato;
 		private final List<String> pages = new ArrayList<>();
@@ -335,13 +353,14 @@ public class PdfContratoService {
 				case BULLET -> drawBullet(block.primary());
 				case NOTE -> drawNote(block.primary());
 				case PARAGRAPH -> drawParagraph(block.primary());
+				case PAGE_BREAK -> pageBreak();
 				case SPACER -> cursorY -= 8f;
 			}
 		}
 
 		private void drawTitle(String text) {
 			ensureSpace(34f);
-			drawText(PdfFont.BOLD, 18f, MARGIN_LEFT, cursorY, text, PRIMARY_DARK);
+			drawText(PdfFont.BOLD, 18f, MARGIN_LEFT, cursorY, text, PRIMARY);
 			cursorY -= 18f;
 			drawLine(MARGIN_LEFT, cursorY, PAGE_WIDTH - MARGIN_RIGHT, cursorY, ACCENT, 1.1f);
 			cursorY -= 16f;
@@ -357,7 +376,7 @@ public class PdfContratoService {
 
 		private void drawSubsection(String text) {
 			ensureSpace(22f);
-			drawText(PdfFont.BOLD, 11f, MARGIN_LEFT, cursorY, text, PRIMARY_DARK);
+			drawText(PdfFont.BOLD, 11f, MARGIN_LEFT, cursorY, text, PRIMARY);
 			cursorY -= 15f;
 		}
 
@@ -399,7 +418,7 @@ public class PdfContratoService {
 			drawFilledAndStrokedRect(MARGIN_LEFT, bottom, CONTENT_WIDTH, boxHeight, NOTE_FILL, BORDER, 0.8f);
 			var textY = cursorY - 12f;
 			for (String line : lines) {
-				drawText(PdfFont.ITALIC, 9.6f, MARGIN_LEFT + 10f, textY, line, PRIMARY_DARK);
+				drawText(PdfFont.ITALIC, 9.6f, MARGIN_LEFT + 10f, textY, line, PRIMARY);
 				textY -= 12.4f;
 			}
 			cursorY = bottom - 10f;
@@ -420,6 +439,12 @@ public class PdfContratoService {
 				cursorY -= lineHeight;
 			}
 			cursorY -= extraAfter;
+		}
+
+		private void pageBreak() {
+			if (cursorY < CONTENT_TOP_Y) {
+				startPage();
+			}
 		}
 
 		private void ensureSpace(float heightNeeded) {
@@ -446,15 +471,19 @@ public class PdfContratoService {
 		}
 
 		private void drawPageChrome() {
-			drawFilledRect(0f, PAGE_HEIGHT - HEADER_HEIGHT, PAGE_WIDTH, HEADER_HEIGHT, PRIMARY);
-			drawText(PdfFont.BOLD, 18f, MARGIN_LEFT, PAGE_HEIGHT - 42f, "Loanflow", WHITE);
-			drawText(PdfFont.REGULAR, 10.2f, MARGIN_LEFT, PAGE_HEIGHT - 58f, "Contrato eletrônico de microcrédito P2P", WHITE);
-			drawFilledRect(PAGE_WIDTH - 188f, PAGE_HEIGHT - 61f, 140f, 24f, ACCENT);
-			drawText(PdfFont.BOLD, 9.2f, PAGE_WIDTH - 176f, PAGE_HEIGHT - 46f, numeroContrato, WHITE);
-			drawRect(MARGIN_LEFT - 12f, FOOTER_HEIGHT + 16f, CONTENT_WIDTH + 24f, PAGE_HEIGHT - HEADER_HEIGHT - FOOTER_HEIGHT - 28f, BORDER, 0.8f);
+			drawFilledRect(0f, PAGE_HEIGHT - HEADER_HEIGHT, PAGE_WIDTH, HEADER_HEIGHT, HEADER_FILL);
+			drawLine(0f, PAGE_HEIGHT - HEADER_HEIGHT, PAGE_WIDTH, PAGE_HEIGHT - HEADER_HEIGHT, BORDER, 0.9f);
+			drawText(PdfFont.BOLD, 17f, MARGIN_LEFT, PAGE_HEIGHT - 36f, "LoanFlow", PRIMARY);
+			drawText(PdfFont.REGULAR, 9.8f, MARGIN_LEFT, PAGE_HEIGHT - 52f, "Contrato eletrônico simplificado", MUTED);
+			drawRightAlignedText(PdfFont.REGULAR, 8.3f, PAGE_WIDTH - MARGIN_RIGHT, PAGE_HEIGHT - 45f, "Contrato", MUTED);
+			drawRightAlignedText(PdfFont.BOLD, 10.3f, PAGE_WIDTH - MARGIN_RIGHT, PAGE_HEIGHT - 32f, numeroContrato, PRIMARY);
 			drawLine(MARGIN_LEFT, FOOTER_HEIGHT + 12f, PAGE_WIDTH - MARGIN_RIGHT, FOOTER_HEIGHT + 12f, BORDER, 0.8f);
-			drawText(PdfFont.REGULAR, 8.5f, MARGIN_LEFT, FOOTER_HEIGHT - 2f, "Documento eletrônico simulado para fins acadêmicos.", MUTED);
-			drawText(PdfFont.REGULAR, 8.5f, PAGE_WIDTH - 88f, FOOTER_HEIGHT - 2f, "Página " + pageNumber, MUTED);
+			drawText(PdfFont.REGULAR, 8.4f, PAGE_WIDTH - 88f, FOOTER_HEIGHT - 2f, "Página " + pageNumber, MUTED);
+		}
+
+		private void drawRightAlignedText(PdfFont font, float size, float rightX, float y, String text, PdfColor color) {
+			var textWidth = estimateTextWidth(text, size, font);
+			drawText(font, size, rightX - textWidth, y, text, color);
 		}
 
 		private void drawText(PdfFont font, float size, float x, float y, String text, PdfColor color) {

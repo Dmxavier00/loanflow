@@ -443,40 +443,23 @@ function Formalizar-PropostaComCredor {
     )
 
     $aceita = Invoke-Loanflow -Method "POST" -Path ("/propostas/{0}/aceitar" -f $Proposta.id) -Token $Credor.token
-    if ($aceita.status -ne "ACEITA") {
-        throw "Proposta $($Proposta.id) nao ficou ACEITA."
+    if ($aceita.status -ne "CONTRATADA") {
+        throw "Proposta $($Proposta.id) nao ficou CONTRATADA."
     }
 
-    $emAnalise = Invoke-Loanflow -Method "POST" -Path ("/propostas/{0}/iniciar-analise" -f $Proposta.id) -Token $Credor.token
-    if ($emAnalise.status -ne "EM_ANALISE") {
-        throw "Proposta $($Proposta.id) nao entrou em EM_ANALISE."
+    $contratoFinal = @(
+        Invoke-Loanflow -Method "GET" -Path "/contratos" -Token $Credor.token |
+        Where-Object { $_.propostaId -eq $Proposta.id } |
+        Select-Object -First 1
+    )[0]
+    if (-not $contratoFinal) {
+        throw "Contrato da proposta $($Proposta.id) nao foi encontrado apos o aceite."
     }
-
-    $aprovada = Invoke-Loanflow -Method "POST" -Path ("/propostas/{0}/aprovar" -f $Proposta.id) -Token $Credor.token
-    if ($aprovada.status -ne "APROVADA") {
-        throw "Proposta $($Proposta.id) nao ficou APROVADA."
-    }
-
-    $contrato = Invoke-Loanflow -Method "POST" -Path ("/contratos/proposta/{0}/gerar" -f $Proposta.id) -Token $Credor.token
-    if ($contrato.status -ne "AGUARDANDO_ASSINATURAS") {
-        throw "Contrato da proposta $($Proposta.id) nao ficou AGUARDANDO_ASSINATURAS."
-    }
-
-    $assinaturaSolicitante = Invoke-Loanflow -Method "POST" -Path ("/contratos/{0}/assinar" -f $contrato.id) -Body @{ aceite = $true } -Token $Solicitante.token
-    if ($assinaturaSolicitante.papelSignatario -ne "SOLICITANTE") {
-        throw "Assinatura do solicitante falhou no contrato $($contrato.id)."
-    }
-
-    $assinaturaCredor = Invoke-Loanflow -Method "POST" -Path ("/contratos/{0}/assinar" -f $contrato.id) -Body @{ aceite = $true } -Token $Credor.token
-    if ($assinaturaCredor.papelSignatario -ne "CREDOR") {
-        throw "Assinatura do credor falhou no contrato $($contrato.id)."
-    }
-
-    $contratoFinal = Invoke-Loanflow -Method "GET" -Path ("/contratos/{0}" -f $contrato.id) -Token $Credor.token
+    $contratoFinal = Invoke-Loanflow -Method "GET" -Path ("/contratos/{0}" -f $contratoFinal.id) -Token $Credor.token
     $propostaFinal = Invoke-Loanflow -Method "GET" -Path ("/propostas/{0}" -f $Proposta.id) -Token $Solicitante.token
 
     if ($contratoFinal.status -ne "FORMALIZADO") {
-        throw "Contrato $($contrato.id) nao foi formalizado."
+        throw "Contrato $($contratoFinal.id) nao foi formalizado."
     }
     if ($propostaFinal.status -ne "CONTRATADA") {
         throw "Proposta $($Proposta.id) nao ficou CONTRATADA."

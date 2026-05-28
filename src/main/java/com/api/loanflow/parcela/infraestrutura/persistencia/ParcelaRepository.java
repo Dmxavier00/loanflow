@@ -15,6 +15,8 @@ public interface ParcelaRepository extends JpaRepository<Parcela, Long>, JpaSpec
 
 	boolean existsByContratoId(Long contratoId);
 
+	boolean existsByContratoIdAndStatusNot(Long contratoId, ParcelaStatus status);
+
 	long countByStatus(ParcelaStatus status);
 
 	List<Parcela> findByStatusInAndDataVencimentoBefore(List<ParcelaStatus> status, LocalDate dataVencimento);

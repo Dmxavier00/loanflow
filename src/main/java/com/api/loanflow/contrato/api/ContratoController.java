@@ -1,15 +1,10 @@
 package com.api.loanflow.contrato.api;
 
-import com.api.loanflow.contrato.api.dto.AssinarContratoRequest;
-import com.api.loanflow.contrato.api.dto.AssinaturaResponse;
 import com.api.loanflow.contrato.api.dto.ContratoResponse;
-import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaRequest;
-import com.api.loanflow.contrato.api.dto.IniciarDesafioAssinaturaResponse;
 import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.contrato.dominio.ContratoStatus;
 import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,9 +38,10 @@ public class ContratoController {
 	public List<ContratoResponse> listar(
 		@RequestParam(required = false) ContratoStatus status,
 		@RequestParam(required = false) String numeroContrato,
-		@RequestParam(required = false) CategoriaFinalidade categoriaFinalidade
+		@RequestParam(required = false) CategoriaFinalidade categoriaFinalidade,
+		@RequestParam(required = false) String nomeContraparte
 	) {
-		return contratoService.listarComFiltros(status, numeroContrato, categoriaFinalidade);
+		return contratoService.listarComFiltros(status, numeroContrato, categoriaFinalidade, nomeContraparte);
 	}
 
 	@GetMapping("/{id}")
@@ -63,28 +57,6 @@ public class ContratoController {
 			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=contrato-" + id + ".pdf")
 			.contentType(MediaType.APPLICATION_PDF)
 			.body(contratoService.baixarPdf(id));
-	}
-
-	@PostMapping("/{id}/assinar")
-	@PreAuthorize("hasAnyRole('SOLICITANTE','CREDOR')")
-	public AssinaturaResponse assinar(
-		@PathVariable Long id,
-		@Valid @RequestBody AssinarContratoRequest request,
-		@RequestHeader(value = "User-Agent", required = false) String userAgent,
-		HttpServletRequest servletRequest
-	) {
-		return contratoService.assinar(id, request.desafioId(), request.codigo(), servletRequest.getRemoteAddr(), userAgent);
-	}
-
-	@PostMapping("/{id}/assinatura/desafio")
-	@PreAuthorize("hasAnyRole('SOLICITANTE','CREDOR')")
-	public IniciarDesafioAssinaturaResponse iniciarDesafioAssinatura(
-		@PathVariable Long id,
-		@Valid @RequestBody IniciarDesafioAssinaturaRequest request,
-		@RequestHeader(value = "User-Agent", required = false) String userAgent,
-		HttpServletRequest servletRequest
-	) {
-		return contratoService.iniciarDesafioAssinatura(id, request.metodo(), servletRequest.getRemoteAddr(), userAgent);
 	}
 
 	@PostMapping("/{id}/cancelar")

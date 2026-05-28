@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PdfContratoServiceTest {
@@ -24,8 +25,8 @@ class PdfContratoServiceTest {
 		var service = new PdfContratoService(tempDir.toString());
 		var conteudo = criarConteudoExtenso();
 
-		var pdfPath = Path.of(service.gerarContratoPdf("LF-TESTE", conteudo)).normalize();
-		assertEquals(tempDir.toAbsolutePath().normalize().resolve("LF-TESTE.pdf"), pdfPath);
+		var pdfPath = Path.of(service.gerarContratoPdf("CTR-TESTE", conteudo)).normalize();
+		assertEquals(tempDir.toAbsolutePath().normalize().resolve("CTR-TESTE.pdf"), pdfPath);
 		assertTrue(Files.exists(pdfPath));
 
 		var pdfBytes = service.lerPdf(pdfPath.toString());
@@ -41,16 +42,42 @@ class PdfContratoServiceTest {
 		var service = new PdfContratoService(storageDir.toString());
 		var conteudo = criarConteudoExtenso();
 
-		var pdfPath = Path.of(service.gerarContratoPdf("LF-LEGADO", conteudo)).normalize();
+		var pdfPath = Path.of(service.gerarContratoPdf("CTR-LEGADO", conteudo)).normalize();
 		var legacyRelativePath = Path.of("contratos", pdfPath.getFileName().toString()).toString();
 
 		assertArrayEquals(Files.readAllBytes(pdfPath), service.lerPdf(legacyRelativePath));
 	}
 
+	@Test
+	void deveRespeitarQuebraDePaginaSemRenderizarMarcadorOuObservacaoDeRodape() throws Exception {
+		var service = new PdfContratoService(tempDir.toString());
+		var conteudo = """
+			Contrato LoanFlow
+			<!-- contract-template:test -->
+
+			# 1. Resumo
+			Campo: Valor
+
+			<!-- page-break -->
+			# 3. Condições registradas
+			- Condição registrada na página seguinte.
+			""";
+
+		var pdfPath = Path.of(service.gerarContratoPdf("CTR-PAGE-BREAK", conteudo)).normalize();
+		var pdfText = new String(Files.readAllBytes(pdfPath), PDF_CHARSET);
+
+		assertTrue(Pattern.compile("/Count\\s+2").matcher(pdfText).find());
+		assertTrue(pdfText.contains("3. Condições registradas"));
+		assertFalse(pdfText.contains("<!-- page-break -->"));
+		assertFalse(pdfText.contains("contract-template:test"));
+		assertFalse(pdfText.toLowerCase().contains("acadêmic"));
+		assertFalse(pdfText.toLowerCase().contains("academic"));
+	}
+
 	private String criarConteudoExtenso() {
 		var conteudo = new StringBuilder()
 			.append("Contrato de Microcrédito P2P - Instrumento Particular\n\n")
-			.append("Número do contrato: LF-TESTE\n")
+			.append("Número do contrato: CTR-TESTE\n")
 			.append("Data de emissão: 28/04/2026 18:00\n")
 			.append("Plataforma emissora: LoanFlow\n\n")
 			.append("# 1. Cláusulas simuladas\n");

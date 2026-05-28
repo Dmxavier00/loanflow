@@ -1,6 +1,8 @@
 package com.api.loanflow.proposta.aplicacao;
 
 import com.api.loanflow.auditoria.aplicacao.AuditoriaService;
+import com.api.loanflow.compartilhado.aplicacao.NumeroNegocioService;
+import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.notificacao.aplicacao.NotificacaoService;
 import com.api.loanflow.proposta.api.dto.AtualizarPropostaRequest;
 import com.api.loanflow.proposta.api.dto.CriarPropostaRequest;
@@ -57,11 +59,15 @@ class PropostaServiceBankAccountRequirementTest {
 	private PoliticaCreditoService politicaCreditoService;
 	@Mock
 	private PoliticaCredorService politicaCredorService;
+	@Mock
+	private ContratoService contratoService;
 
 	private PropostaService propostaService;
+	private NumeroNegocioService numeroNegocioService;
 
 	@BeforeEach
 	void setUp() {
+		numeroNegocioService = new NumeroNegocioService();
 		propostaService = new PropostaService(
 			propostaRepository,
 			solicitanteRepository,
@@ -70,7 +76,9 @@ class PropostaServiceBankAccountRequirementTest {
 			auditoriaService,
 			notificacaoService,
 			politicaCreditoService,
-			politicaCredorService
+			politicaCredorService,
+			numeroNegocioService,
+			contratoService
 		);
 	}
 
@@ -91,6 +99,7 @@ class PropostaServiceBankAccountRequirementTest {
 
 		assertEquals("Cadastre uma conta bancária antes de criar uma proposta.", exception.getMessage());
 		verify(propostaRepository, never()).save(org.mockito.ArgumentMatchers.any(Proposta.class));
+		verify(propostaRepository, never()).saveAndFlush(org.mockito.ArgumentMatchers.any(Proposta.class));
 	}
 
 	@Test
@@ -100,6 +109,12 @@ class PropostaServiceBankAccountRequirementTest {
 		var request = criarRequest();
 		when(usuarioService.usuarioAtual()).thenReturn(usuario);
 		when(solicitanteRepository.findByUsuarioId(11L)).thenReturn(Optional.of(solicitante));
+		when(propostaRepository.saveAndFlush(any(Proposta.class))).thenAnswer(invocation -> {
+			var proposta = invocation.getArgument(0, Proposta.class);
+			ReflectionTestUtils.setField(proposta, "id", 811L);
+			ReflectionTestUtils.setField(proposta, "dataCriacao", LocalDate.now().atStartOfDay());
+			return proposta;
+		});
 		when(propostaRepository.save(any(Proposta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		propostaService.criar(request, "127.0.0.1");
@@ -119,11 +134,18 @@ class PropostaServiceBankAccountRequirementTest {
 		var request = criarRequest();
 		when(usuarioService.usuarioAtual()).thenReturn(usuario);
 		when(solicitanteRepository.findByUsuarioId(12L)).thenReturn(Optional.of(solicitante));
+		when(propostaRepository.saveAndFlush(any(Proposta.class))).thenAnswer(invocation -> {
+			var proposta = invocation.getArgument(0, Proposta.class);
+			ReflectionTestUtils.setField(proposta, "id", 812L);
+			ReflectionTestUtils.setField(proposta, "dataCriacao", LocalDate.now().atStartOfDay());
+			return proposta;
+		});
 		when(propostaRepository.save(any(Proposta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		var response = propostaService.criar(request, "127.0.0.1");
 
 		assertEquals(LocalDate.now().plusDays(7), response.dataExpiracao());
+		assertEquals("PPT-%d-000812".formatted(LocalDate.now().getYear()), response.numeroProposta());
 	}
 
 	@Test
@@ -235,6 +257,7 @@ class PropostaServiceBankAccountRequirementTest {
 			proposta.getPrazoMeses()
 		);
 		verify(politicaCredorService).validarDisponibilidade(credor, proposta);
+		verify(contratoService).gerarEFormalizarAutomaticamente(proposta, usuario, "127.0.0.1");
 	}
 
 	@Test
@@ -322,6 +345,7 @@ class PropostaServiceBankAccountRequirementTest {
 	private Proposta proposta(Long id, SolicitanteCredito solicitante, Credor credor, PropostaStatus status) {
 		var proposta = new Proposta();
 		ReflectionTestUtils.setField(proposta, "id", id);
+		proposta.setNumeroProposta("PPT-2026-%06d".formatted(id));
 		proposta.setSolicitante(solicitante);
 		proposta.setCredor(credor);
 		proposta.setStatus(status);

@@ -7,23 +7,35 @@ import SectionCard from '../componentes/SectionCard';
 import StatusBadge from '../componentes/StatusBadge';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
-import { formatCurrency, formatDate, formatLabel, formatProposalHeadline } from '../biblioteca/format';
+import {
+  formatCurrency,
+  formatDate,
+  formatLabel,
+  formatProposalHeadline,
+  formatProposalNumber
+} from '../biblioteca/format';
 
 function getCreditorWorkflowHint(status) {
   switch (status) {
     case 'ACEITA':
-      return 'Próximo passo: iniciar a análise da proposta.';
+      return 'Fluxo legado: a proposta ainda aguarda a etapa seguinte.';
     case 'EM_ANALISE':
-      return 'Próximo passo: aprovar ou rejeitar a proposta.';
+      return 'Fluxo legado: aprove ou rejeite a proposta para seguir.';
     case 'APROVADA':
-      return 'Próximo passo: gerar o contrato.';
+      return 'Fluxo legado: formalize o contrato automaticamente.';
     case 'REJEITADA':
       return 'Fluxo encerrado: proposta rejeitada pelo credor.';
     case 'CONTRATADA':
-      return 'Fluxo concluído: contrato gerado e formalizado.';
+      return 'Fluxo concluído: aceite registrado e contrato formalizado automaticamente.';
+    case 'QUITADA':
+      return 'Fluxo encerrado: contrato quitado por pagamento integral.';
     default:
       return '';
   }
+}
+
+function findProposalById(proposals, proposalId) {
+  return proposals.find((proposal) => proposal.id === proposalId) ?? null;
 }
 
 const simulationDisclaimer =
@@ -90,28 +102,28 @@ export default function CredorPropostasPage() {
 
     await runAction(
       () => api.acceptProposal(token, selectedProposal.id),
-      `Proposta #${selectedProposal.id} aceita com sucesso.`
+      `Proposta ${formatProposalNumber(selectedProposal)} aceita e contratada com sucesso.`
     );
   };
 
   const handleStartAnalysis = async (proposalId) => {
     await runAction(
       () => api.startProposalAnalysis(token, proposalId),
-      `Análise iniciada para a proposta #${proposalId}.`
+      `Análise iniciada para a proposta ${formatProposalNumber(findProposalById(acceptedProposals, proposalId) ?? { id: proposalId })}.`
     );
   };
 
   const handleApproveProposal = async (proposalId) => {
     await runAction(
       () => api.approveProposal(token, proposalId),
-      `Proposta #${proposalId} aprovada com sucesso.`
+      `Proposta ${formatProposalNumber(findProposalById(acceptedProposals, proposalId) ?? { id: proposalId })} aprovada com sucesso.`
     );
   };
 
   const handleRejectProposal = async (proposalId) => {
     await runAction(
       () => api.rejectProposal(token, proposalId),
-      `Proposta #${proposalId} rejeitada com sucesso.`
+      `Proposta ${formatProposalNumber(findProposalById(acceptedProposals, proposalId) ?? { id: proposalId })} rejeitada com sucesso.`
     );
   };
 
@@ -120,7 +132,7 @@ export default function CredorPropostasPage() {
       const contract = await api.generateContract(token, proposalId);
       window.localStorage.setItem('loanflow.lastContractId', String(contract.id));
       navigate(`/contratos?numeroContrato=${encodeURIComponent(contract.numeroContrato)}&contratoId=${contract.id}`);
-    }, 'Contrato gerado com sucesso.');
+    }, 'Contrato formalizado com sucesso.');
   };
 
   return (
@@ -129,12 +141,12 @@ export default function CredorPropostasPage() {
       <MessageBanner type="success">{feedback}</MessageBanner>
       <BankAccountNotice
         show={!hasBankAccount}
-        message="Cadastre uma conta bancária no painel antes de aceitar propostas, iniciar análises, aprovar operações ou gerar contratos."
+        message="Cadastre uma conta bancária no painel antes de aceitar propostas e formalizar contratos."
       />
 
       <SectionCard
         title="Propostas aguardando aceite"
-        subtitle="Selecione uma proposta aberta para vinculá-la ao seu perfil e mover o fluxo simulado para análise."
+        subtitle="Selecione uma proposta aberta para vinculá-la ao seu perfil e formalizar o contrato automaticamente."
       >
         {loading ? (
           <p className="helper-text">Carregando propostas aguardando aceite...</p>
@@ -149,7 +161,7 @@ export default function CredorPropostasPage() {
                   <strong>{formatProposalHeadline(proposal)}</strong>
                   <p>{proposal.finalidade}</p>
                   <small>
-                    Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
+                    Proposta {formatProposalNumber(proposal)} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
                     {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses | Expira em{' '}
                     {formatDate(proposal.dataExpiracao)}
                   </small>
@@ -177,7 +189,7 @@ export default function CredorPropostasPage() {
 
       <SectionCard
         title="Proposta selecionada"
-        subtitle="Confira os dados da simulação antes de aceitar a proposta e assumir a análise."
+        subtitle="Confira os dados da simulação antes de aceitar a proposta e formalizar o contrato."
         actions={
           <button
             type="button"
@@ -185,7 +197,7 @@ export default function CredorPropostasPage() {
             onClick={handleAcceptSelected}
             disabled={!selectedProposal || !hasBankAccount}
           >
-            Aceitar proposta
+            Aceitar e formalizar
           </button>
         }
       >
@@ -198,7 +210,7 @@ export default function CredorPropostasPage() {
             </div>
             <div>
               <dt>Código</dt>
-              <dd>#{selectedProposal.id}</dd>
+              <dd>{formatProposalNumber(selectedProposal)}</dd>
             </div>
             <div>
               <dt>Status atual</dt>
@@ -245,7 +257,7 @@ export default function CredorPropostasPage() {
 
       <SectionCard
         title="Carteira do credor"
-        subtitle="Propostas simuladas assumidas por você e o próximo passo operacional de cada uma."
+        subtitle="Propostas simuladas assumidas por você e o estágio operacional de cada uma."
       >
         {loading ? (
           <p className="helper-text">Carregando carteira do credor...</p>
@@ -257,7 +269,7 @@ export default function CredorPropostasPage() {
                   <strong>{formatProposalHeadline(proposal)}</strong>
                   <p>{proposal.finalidade}</p>
                   <small>
-                    Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
+                    Proposta {formatProposalNumber(proposal)} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
                     {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses
                   </small>
                   {getCreditorWorkflowHint(proposal.status) ? (
@@ -303,7 +315,7 @@ export default function CredorPropostasPage() {
                         onClick={() => handleGenerateContract(proposal.id)}
                         disabled={!hasBankAccount}
                       >
-                        Gerar contrato
+                        Formalizar contrato
                       </button>
                     ) : null}
                   </div>
@@ -314,7 +326,7 @@ export default function CredorPropostasPage() {
         ) : (
           <EmptyState
             title="Sua carteira de propostas está vazia."
-            description="As propostas aceitas por você passam a aparecer aqui para análise, decisão e contrato."
+            description="As propostas assumidas por você passam a aparecer aqui com o estágio atual do contrato."
           />
         )}
       </SectionCard>

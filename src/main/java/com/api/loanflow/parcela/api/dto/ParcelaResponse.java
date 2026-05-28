@@ -10,6 +10,7 @@ public record ParcelaResponse(
 	Long id,
 	Long contratoId,
 	String numeroContrato,
+	String credorNome,
 	Integer numero,
 	BigDecimal valorPrevisto,
 	BigDecimal valorPagoAcumulado,
@@ -21,6 +22,9 @@ public record ParcelaResponse(
 			parcela.getId(),
 			parcela.getContrato().getId(),
 			parcela.getContrato().getNumeroContrato(),
+			parcela.getContrato().getProposta().getCredor() == null
+				? null
+				: parcela.getContrato().getProposta().getCredor().getUsuario().getNome(),
 			parcela.getNumero(),
 			parcela.getValorPrevisto(),
 			parcela.getValorPagoAcumulado(),

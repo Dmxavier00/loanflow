@@ -4,6 +4,7 @@ import com.api.loanflow.proposta.aplicacao.PropostaService;
 import com.api.loanflow.proposta.api.dto.PropostaResponse;
 import com.api.loanflow.proposta.dominio.CategoriaFinalidade;
 import com.api.loanflow.proposta.dominio.PropostaStatus;
+import com.api.loanflow.usuario.dominio.NivelRiscoCredito;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,8 +44,11 @@ class PropostaControllerWebTest {
 	void listarDeveResponderJsonSemConflitoComForwardDoSpa() throws Exception {
 		var resposta = new PropostaResponse(
 			1L,
+			"PPT-2026-000001",
 			2L,
 			"Ana Souza",
+			75,
+			NivelRiscoCredito.BAIXO,
 			null,
 			new BigDecimal("4800.00"),
 			new BigDecimal("8.9000"),
@@ -66,7 +70,10 @@ class PropostaControllerWebTest {
 				.with(user("solicitante@loanflow.test").roles("SOLICITANTE")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$[0].id").value(1))
+			.andExpect(jsonPath("$[0].numeroProposta").value("PPT-2026-000001"))
 			.andExpect(jsonPath("$[0].solicitanteNome").value("Ana Souza"))
+			.andExpect(jsonPath("$[0].solicitanteScoreCredito").value(75))
+			.andExpect(jsonPath("$[0].solicitanteNivelRisco").value("BAIXO"))
 			.andExpect(jsonPath("$[0].valorTotalComJuros").value(5227.20))
 			.andExpect(jsonPath("$[0].categoriaFinalidade").value("SAUDE"))
 			.andExpect(jsonPath("$[0].status").value("AGUARDANDO_ACEITE"));
@@ -147,8 +154,11 @@ class PropostaControllerWebTest {
 	void detalharPorIdDevePermitirSolicitanteAutenticado() throws Exception {
 		var resposta = new PropostaResponse(
 			1L,
+			"PPT-2026-000001",
 			2L,
 			"Maria Souza",
+			55,
+			NivelRiscoCredito.MEDIO,
 			4L,
 			new BigDecimal("2500.00"),
 			new BigDecimal("7.5000"),
@@ -176,8 +186,11 @@ class PropostaControllerWebTest {
 	void listarPorStatusDevePermitirCredorAutenticado() throws Exception {
 		var resposta = new PropostaResponse(
 			1L,
+			"PPT-2026-000001",
 			2L,
 			"Maria Souza",
+			85,
+			NivelRiscoCredito.BAIXO,
 			4L,
 			new BigDecimal("2500.00"),
 			new BigDecimal("7.5000"),

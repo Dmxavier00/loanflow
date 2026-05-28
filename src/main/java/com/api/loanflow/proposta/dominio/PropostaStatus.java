@@ -10,5 +10,6 @@ public enum PropostaStatus {
 	REJEITADA,
 	CANCELADA,
 	EXPIRADA,
-	CONTRATADA
+	CONTRATADA,
+	QUITADA
 }

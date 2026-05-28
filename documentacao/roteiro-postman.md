@@ -15,9 +15,6 @@ usuarioId =
 credorId = 1
 propostaId =
 contratoId =
-desafioIdSolicitante =
-desafioIdCredor =
-codigoTemporarioCredor =
 parcelaId =
 pagamentoId =
 notificacaoId =
@@ -294,9 +291,11 @@ Salvar `id` em `contratoId`.
 Resultado esperado:
 
 ```text
-status = AGUARDANDO_ASSINATURAS
+status = FORMALIZADO
 hashDocumento preenchido
 pdfPath preenchido
+dataFormalizacao preenchida
+parcelas geradas automaticamente
 ```
 
 ## 11. Consultar Contrato
@@ -317,116 +316,9 @@ Authorization: Bearer {{tokenSolicitante}}
 
 Resultado esperado: download de um PDF simples do contrato.
 
-## 13. Solicitante Inicia Desafio por Senha
+## 13. Observação sobre a Formalização
 
-```http
-POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
-Authorization: Bearer {{tokenSolicitante}}
-```
-
-Body:
-
-```json
-{
-  "metodo": "REAUTENTICACAO_SENHA"
-}
-```
-
-Salvar `desafioId` em `desafioIdSolicitante`.
-
-Resultado esperado:
-
-```text
-metodo = REAUTENTICACAO_SENHA
-expiraEm preenchido
-mensagem orientando a confirmacao final
-```
-
-## 13.1. Solicitante Confirma Assinatura com Senha Atual
-
-```http
-POST {{baseUrl}}/contratos/{{contratoId}}/assinar
-Authorization: Bearer {{tokenSolicitante}}
-```
-
-Body:
-
-```json
-{
-  "aceite": true,
-  "desafioId": "{{desafioIdSolicitante}}",
-  "codigo": "Senha@123"
-}
-```
-
-Resultado esperado: assinatura registrada.
-
-## 14. Credor Inicia Desafio por Código Temporário
-
-```http
-POST {{baseUrl}}/contratos/{{contratoId}}/assinatura/desafio
-Authorization: Bearer {{tokenCredor}}
-```
-
-Body:
-
-```json
-{
-  "metodo": "CODIGO_ONE_TIME"
-}
-```
-
-Salvar `desafioId` em `desafioIdCredor`.
-
-Resultado esperado:
-
-```text
-metodo = CODIGO_ONE_TIME
-expiraEm preenchido
-mascaraDestino preenchida
-mensagem orientando consulta a notificacao
-```
-
-## 14.1. Credor Consulta Notificação com o Código
-
-```http
-GET {{baseUrl}}/notificacoes?lida=false&tipo=SISTEMA
-Authorization: Bearer {{tokenCredor}}
-```
-
-Resultado esperado:
-
-```text
-mensagem contendo "Codigo temporario para assinatura do contrato"
-codigo numerico temporario visivel na notificacao
-```
-
-Copie o código retornado e salve manualmente em `codigoTemporarioCredor`.
-
-## 14.2. Credor Confirma Assinatura com o Código
-
-```http
-POST {{baseUrl}}/contratos/{{contratoId}}/assinar
-Authorization: Bearer {{tokenCredor}}
-```
-
-Body:
-
-```json
-{
-  "aceite": true,
-  "desafioId": "{{desafioIdCredor}}",
-  "codigo": "{{codigoTemporarioCredor}}"
-}
-```
-
-Resultado esperado:
-
-```text
-contrato formalizado
-proposta contratada
-parcelas geradas automaticamente
-```
+No fluxo atual do projeto, a formalização acontece automaticamente quando o credor conclui o aceite ou quando o contrato é gerado a partir de uma proposta já aprovada. Não há mais etapa manual de assinatura pela interface ou pela API pública.
 
 ## 15. Listar Parcelas do Contrato
 
@@ -538,7 +430,6 @@ SUBMETER
 INICIAR_ANALISE
 APROVAR
 GERAR_CONTRATO
-ASSINAR
 FORMALIZAR
 GERAR_PARCELAS
 REGISTRAR_PAGAMENTO
@@ -547,7 +438,7 @@ REGISTRAR_PAGAMENTO
 Filtro opcional:
 
 ```http
-GET {{baseUrl}}/admin/auditorias?acao=ASSINAR&entidadeTipo=Contrato&entidadeId={{contratoId}}
+GET {{baseUrl}}/admin/auditorias?acao=FORMALIZAR&entidadeTipo=Contrato&entidadeId={{contratoId}}
 Authorization: Bearer {{tokenAdmin}}
 ```
 
@@ -617,26 +508,9 @@ Authorization: Bearer {{tokenAdmin}}
 
 ## Problemas Comuns
 
-### 400/422 ao assinar contrato
+### 400 ao gerar ou consultar contrato
 
-Confira se o fluxo foi executado em duas etapas:
-
-```text
-1. POST /contratos/{id}/assinatura/desafio
-2. POST /contratos/{id}/assinar com desafioId e codigo
-```
-
-Sem `desafioId`, sem `codigo` ou sem `aceite=true`, a confirmação final falha.
-
-### 400 com desafio expirado
-
-Se o backend responder que o desafio expirou, gere outro:
-
-```text
-POST /contratos/{id}/assinatura/desafio
-```
-
-Depois repita a confirmação final com o novo `desafioId`.
+Confirme se a proposta já está em condição de contratação e se o `contratoId` salvo corresponde ao retorno mais recente do fluxo.
 
 ### 403 em /auth/register
 
@@ -671,7 +545,7 @@ parcelaId
 Confira se está usando o token do papel correto:
 
 ```text
-SOLICITANTE -> criar/submeter proposta, assinar, pagar
-CREDOR -> analisar, aprovar, gerar contrato, assinar
+SOLICITANTE -> criar/submeter proposta, consultar contrato, pagar
+CREDOR -> analisar, aprovar/aceitar, gerar contrato, cancelar
 ADMIN -> auditorias
 ```

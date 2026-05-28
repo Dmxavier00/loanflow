@@ -11,10 +11,10 @@ import {
   formatDate,
   formatDateTime,
   formatLabel,
-  formatProposalHeadline
+  formatProposalHeadline,
+  formatProposalNumber
 } from '../biblioteca/format';
 
-const SIGNATURE_STATUSES = ['AGUARDANDO_ASSINATURAS', 'ASSINADO_PARCIALMENTE'];
 const OPEN_INSTALLMENT_STATUSES = ['ABERTA', 'PARCIALMENTE_PAGA', 'EM_ATRASO'];
 const MONTH_LABELS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
 const TREND_CURRENCY_FORMATTER = new Intl.NumberFormat('pt-BR', {
@@ -278,15 +278,11 @@ function getGenericPill(status) {
     return { label: formatLabel(status), tone: 'danger' };
   }
 
-  if (
-    ['AGUARDANDO_ASSINATURAS', 'ASSINADO_PARCIALMENTE', 'EM_ANALISE', 'AGUARDANDO_ACEITE'].includes(
-      status
-    )
-  ) {
+  if (['EM_ANALISE', 'AGUARDANDO_ACEITE'].includes(status)) {
     return { label: formatLabel(status), tone: 'warning' };
   }
 
-  if (['FORMALIZADO', 'PAGA', 'ACEITA', 'APROVADA', 'CONTRATADA'].includes(status)) {
+  if (['FORMALIZADO', 'QUITADO', 'PAGA', 'ACEITA', 'APROVADA', 'CONTRATADA', 'QUITADA'].includes(status)) {
     return { label: formatLabel(status), tone: 'success' };
   }
 
@@ -466,18 +462,11 @@ function DashboardTrendChart({ points, isProjection, projectionNote, ariaLabel }
   );
 }
 
-function getBorrowerStatusPill(overdueCount, pendingSignatureCount, openCount) {
+function getBorrowerStatusPill(overdueCount, openCount) {
   if (overdueCount) {
     return {
       label: `${overdueCount} atraso(s) exigem atenção`,
       tone: 'danger'
-    };
-  }
-
-  if (pendingSignatureCount) {
-    return {
-      label: `${pendingSignatureCount} assinatura(s) pendente(s)`,
-      tone: 'warning'
     };
   }
 
@@ -505,7 +494,7 @@ function DashboardBorrowerCommitmentPanel({
   paidInstallments,
   installments,
   nextInstallments,
-  contractsAwaitingSignature,
+  activeContracts,
   myProposals,
   notifications
 }) {
@@ -513,7 +502,6 @@ function DashboardBorrowerCommitmentPanel({
   const safeProgress = Math.max(0, Math.min(paidInstallmentProgress, 100));
   const statusPill = getBorrowerStatusPill(
     overdueInstallments.length,
-    contractsAwaitingSignature.length,
     openInstallments.length
   );
   const borrowerFacts = [
@@ -566,14 +554,14 @@ function DashboardBorrowerCommitmentPanel({
     },
     {
       to: '/contratos',
-      icon: 'signature',
-      eyebrow: 'Assinaturas',
-      title: contractsAwaitingSignature.length
-        ? `${contractsAwaitingSignature.length} contrato(s) aguardando você`
-        : 'Nenhuma assinatura pendente',
-      description: contractsAwaitingSignature.length
-        ? 'Revise seus contratos para liberar a próxima etapa.'
-        : 'Seu fluxo contratual está em dia no momento.'
+      icon: 'file-check',
+      eyebrow: 'Contratos',
+      title: activeContracts.length
+        ? `${activeContracts.length} contrato(s) ativo(s)`
+        : 'Nenhum contrato ativo',
+      description: activeContracts.length
+        ? 'Consulte documentos e cronogramas financeiros vinculados aos seus contratos.'
+        : 'Contratos formalizados aparecerao aqui quando o fluxo avancar.'
     },
     {
       to: '/solicitacoes',
@@ -673,6 +661,262 @@ function DashboardBorrowerCommitmentPanel({
                 </span>
               </Link>
             ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function DashboardBorrowerSimplePanel({
+  loading,
+  totalOutstandingInstallmentValue,
+  paidInstallmentProgress,
+  openInstallments,
+  overdueInstallments,
+  paidInstallments,
+  installments,
+  nextInstallments,
+  contracts,
+  notifications,
+  creditScore,
+  financialOccupation,
+  monthlyIncome
+}) {
+  const nextInstallment = nextInstallments[0] ?? null;
+  const nextContract = nextInstallment
+    ? contracts.find(
+        (contract) =>
+          contract.id === nextInstallment.contratoId ||
+          contract.numeroContrato === nextInstallment.numeroContrato
+      )
+    : null;
+  const creditorName = nextInstallment?.credorNome?.trim() || nextContract?.credorNome?.trim();
+  const safeProgress = Math.max(0, Math.min(paidInstallmentProgress, 100));
+  const chargedValue = nextInstallment
+    ? getOutstandingInstallmentValue(nextInstallment)
+    : totalOutstandingInstallmentValue;
+  const latestNotifications = [...notifications]
+    .sort((left, right) => toTimeValue(right.dataEnvio) - toTimeValue(left.dataEnvio))
+    .slice(0, 3);
+  const numericCreditScore = Number(creditScore);
+  const hasCreditScore =
+    creditScore !== null && creditScore !== undefined && creditScore !== '' && Number.isFinite(numericCreditScore);
+  const safeCreditScore = hasCreditScore ? Math.max(0, Math.min(100, numericCreditScore)) : 0;
+  const scoreTone =
+    !hasCreditScore ? 'is-empty' : safeCreditScore >= 70 ? 'is-strong' : safeCreditScore >= 40 ? 'is-medium' : 'is-low';
+  const scoreCircleRadius = 70;
+  const scoreCircleCircumference = 2 * Math.PI * scoreCircleRadius;
+  const scoreCircleOffset = scoreCircleCircumference * (1 - safeCreditScore / 100);
+  const scoreStatusLabel = !hasCreditScore
+    ? 'Pendente'
+    : safeCreditScore >= 70
+      ? 'Boa'
+      : safeCreditScore >= 40
+        ? 'Regular'
+        : 'Baixa';
+  const scoreReasonTitle = !hasCreditScore
+    ? 'Dados financeiros pendentes'
+    : safeCreditScore >= 70
+      ? 'Perfil bem posicionado'
+      : safeCreditScore >= 40
+        ? 'Perfil em análise'
+        : 'Perfil precisa de atenção';
+  const scoreReasonDescription = !hasCreditScore
+    ? 'Complete renda, ocupação e dados financeiros para liberar uma leitura mais precisa do score.'
+    : safeCreditScore >= 70
+      ? 'O score considera os dados financeiros cadastrados e indica uma leitura positiva para os credores.'
+      : safeCreditScore >= 40
+        ? 'O score considera os dados financeiros cadastrados e sugere cautela moderada na análise.'
+        : 'O score considera os dados financeiros cadastrados e sinaliza maior risco para novas aprovações.';
+  const occupationLabel =
+    typeof financialOccupation === 'string' && financialOccupation.trim()
+      ? financialOccupation.trim()
+      : 'não informada';
+  const hasMonthlyIncome =
+    monthlyIncome !== null && monthlyIncome !== undefined && monthlyIncome !== '' && Number.isFinite(Number(monthlyIncome));
+  const monthlyIncomeLabel = hasMonthlyIncome ? formatCurrency(monthlyIncome) : 'não informada';
+  const scoreRecommendation = !hasCreditScore
+    ? 'Complete seus dados financeiros para melhorar a leitura dos credores.'
+    : safeCreditScore >= 70
+      ? 'Mantenha seus dados financeiros atualizados para preservar uma boa leitura.'
+      : safeCreditScore >= 40
+        ? 'Atualize renda e ocupação para melhorar a confiança da análise.'
+        : 'Revise seus dados financeiros antes de iniciar uma nova solicitação.';
+
+  return (
+    <section className="dashboard-reference-panel dashboard-borrower-panel dashboard-borrower-simple-panel">
+      {loading ? (
+        <p className="helper-text">Carregando panorama do solicitante...</p>
+      ) : (
+        <>
+          <div className="dashboard-borrower-overview-grid">
+            <article className="dashboard-borrower-next-panel">
+              <div className="dashboard-borrower-next-head">
+                <div>
+                  <span className="dashboard-borrower-simple-kicker">Próxima parcela</span>
+                  <strong className="dashboard-borrower-simple-value">
+                    {nextInstallment ? `Parcela ${nextInstallment.numero}` : 'Sem parcela aberta'}
+                  </strong>
+                </div>
+                <span className="dashboard-borrower-simple-icon" aria-hidden="true">
+                  <UiIcon name="calendar" />
+                </span>
+              </div>
+
+              {nextInstallment ? (
+                <div className="dashboard-borrower-next-meta">
+                  <div>
+                    <span>Contrato</span>
+                    <strong>{nextInstallment.numeroContrato}</strong>
+                  </div>
+                  <div>
+                    <span>Credor</span>
+                    <strong>{creditorName || 'não informado'}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p>Quando houver uma nova cobrança, ela aparece aqui.</p>
+              )}
+
+              <div className="dashboard-borrower-charge-grid">
+                <div>
+                  <span>Valor cobrado</span>
+                  <strong>{formatCurrency(chargedValue)}</strong>
+                </div>
+                <div>
+                  <span>Vencimento</span>
+                  <strong>{nextInstallment ? formatDate(nextInstallment.dataVencimento) : '-'}</strong>
+                </div>
+                <div>
+                  <span>Saldo em aberto</span>
+                  <strong>{formatCurrency(totalOutstandingInstallmentValue)}</strong>
+                </div>
+              </div>
+
+              <div className="dashboard-borrower-progress">
+                <div className="dashboard-borrower-progress-head">
+                  <span>Cronograma pago</span>
+                  <strong>
+                    {paidInstallments.length} de {installments.length}
+                  </strong>
+                </div>
+                <div className="dashboard-borrower-progress-track" aria-hidden="true">
+                  <span style={{ width: `${safeProgress}%` }} />
+                </div>
+                <small>{safeProgress}% concluído.</small>
+              </div>
+
+            </article>
+
+            <aside className="dashboard-borrower-alerts-panel dashboard-borrower-alerts-side">
+              <div className="dashboard-borrower-alerts-head">
+                <div>
+                  <h3>Últimos alertas</h3>
+                  <p>As 3 atualizações mais recentes do seu fluxo.</p>
+                </div>
+                <Link to="/alertas" className="dashboard-reference-footer-link">
+                  <span>Ver todos</span>
+                  <UiIcon name="arrow-right" size={16} />
+                </Link>
+              </div>
+
+              {latestNotifications.length ? (
+                <div className="dashboard-borrower-alert-list">
+                  {latestNotifications.map((notification) => (
+                    <article key={notification.id} className="dashboard-borrower-alert-item">
+                      <span className="dashboard-borrower-alert-icon" aria-hidden="true">
+                        <UiIcon name="bell" size={18} />
+                      </span>
+                      <div>
+                        <strong>{notification.mensagem}</strong>
+                        <small>{formatDateTime(notification.dataEnvio)}</small>
+                      </div>
+                      <span
+                        className={`dashboard-reference-pill tone-${notification.lida ? 'info' : 'warning'}`}
+                      >
+                        {notification.lida ? 'Lido' : 'Novo'}
+                      </span>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Sem alertas recentes."
+                  description="Novas atualizações aparecerão aqui assim que o fluxo avançar."
+                />
+              )}
+            </aside>
+          </div>
+
+          <div className="dashboard-borrower-financial-grid">
+            <section className={`dashboard-borrower-score-panel ${scoreTone}`}>
+              <h3>Score do solicitante</h3>
+
+              <div className="dashboard-borrower-score-content">
+                <div className="dashboard-borrower-score-visual">
+                  <div className="dashboard-borrower-score-ring" aria-hidden="true">
+                    <svg viewBox="0 0 180 180" focusable="false">
+                      <circle
+                        className="dashboard-borrower-score-ring-track"
+                        cx="90"
+                        cy="90"
+                        r={scoreCircleRadius}
+                      />
+                      <circle
+                        className="dashboard-borrower-score-ring-bar"
+                        cx="90"
+                        cy="90"
+                        r={scoreCircleRadius}
+                        strokeDasharray={scoreCircleCircumference}
+                        strokeDashoffset={scoreCircleOffset}
+                      />
+                    </svg>
+                    <div>
+                      <strong>{hasCreditScore ? Math.round(safeCreditScore) : '-'}</strong>
+                      <span>/100</span>
+                    </div>
+                  </div>
+
+                  <div className="dashboard-borrower-score-copy">
+                    <h4>{scoreStatusLabel}</h4>
+                  </div>
+                </div>
+
+                <div className="dashboard-borrower-score-explanation">
+                  <span>Por que esse score?</span>
+                  <strong>{scoreReasonTitle}</strong>
+                  <p>{scoreReasonDescription}</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="dashboard-borrower-profile-panel">
+              <div>
+                <span className="dashboard-borrower-simple-kicker">Perfil financeiro</span>
+              </div>
+
+              <div className="dashboard-borrower-profile-list">
+                <div>
+                  <span>Ocupação</span>
+                  <strong>{occupationLabel}</strong>
+                </div>
+                <div>
+                  <span>Renda informada</span>
+                  <strong>{monthlyIncomeLabel}</strong>
+                </div>
+              </div>
+
+              <div className="dashboard-borrower-profile-recommendation">
+                <span className="dashboard-borrower-alert-icon" aria-hidden="true">
+                  <UiIcon name="chart" size={17} />
+                </span>
+                <div>
+                  <span>Recomendação</span>
+                  <strong>{scoreRecommendation}</strong>
+                </div>
+              </div>
+            </section>
           </div>
         </>
       )}
@@ -810,7 +1054,7 @@ function DashboardOverviewPage() {
 
         throw requestError;
       }),
-      api.getNotifications(token, { lida: false }),
+      api.getNotifications(token, {}),
       api.searchContracts(token, {}),
       api.searchParcelas(token, {})
     ];
@@ -930,9 +1174,6 @@ function DashboardOverviewPage() {
   }, [token, isAdmin, isSolicitante, isCredor]);
 
   const activeContracts = contracts.filter((contract) => contract.status !== 'CANCELADO');
-  const contractsAwaitingSignature = contracts.filter((contract) =>
-    SIGNATURE_STATUSES.includes(contract.status)
-  );
   const openInstallments = installments.filter((installment) =>
     OPEN_INSTALLMENT_STATUSES.includes(installment.status)
   );
@@ -971,10 +1212,6 @@ function DashboardOverviewPage() {
   );
   const totalOutstandingInstallmentValue = sumValues(
     openInstallments,
-    (installment) => getOutstandingInstallmentValue(installment)
-  );
-  const totalOverdueOutstandingValue = sumValues(
-    overdueInstallments,
     (installment) => getOutstandingInstallmentValue(installment)
   );
   const totalPaidInstallmentValue = sumValues(
@@ -1040,7 +1277,7 @@ function DashboardOverviewPage() {
             icon: 'stack',
             label: 'Contratos ativos',
             value: `${activeContracts.length}`,
-            helper: `${contractsAwaitingSignature.length} em assinatura`
+            helper: `${recentContracts.length} recente(s)`
           },
           {
             icon: 'chart',
@@ -1143,7 +1380,7 @@ function DashboardOverviewPage() {
             to: `/solicitacoes?focusId=${proposal.id}`,
             icon: 'file',
             title: formatProposalHeadline(proposal),
-            subtitle: `${proposal.finalidade || 'Sem resumo'} · ${formatCurrency(
+            subtitle: `${formatProposalNumber(proposal)} · ${proposal.finalidade || 'Sem resumo'} · ${formatCurrency(
               proposal.valorSolicitado
             )}`,
             pill: getGenericPill(proposal.status)
@@ -1173,18 +1410,18 @@ function DashboardOverviewPage() {
 
   const secondaryPanel = isAdmin
     ? {
-        icon: 'signature',
-        title: 'Assinaturas pendentes',
-        description: 'Contratos aguardando fechamento ou formalização.',
+          icon: 'file-check',
+          title: 'Contratos recentes',
+          description: 'Documentos formalizados ou encerrados mais recentes.',
         footerTo: '/contratos',
         footerLabel: 'Ver contratos',
-        items: (contractsAwaitingSignature.length ? contractsAwaitingSignature : recentContracts)
+        items: recentContracts
           .slice(0, 3)
           .map((contract) => ({
             kind: 'resource',
             key: `contract-${contract.id}`,
             to: `/contratos?contratoId=${contract.id}`,
-            icon: 'signature',
+            icon: 'file-check',
             title: contract.finalidade || 'Contrato de empréstimo',
             subtitle: `${contract.numeroContrato} · ${formatDateTime(
               contract.dataFormalizacao ?? contract.dataGeracao
@@ -1194,18 +1431,18 @@ function DashboardOverviewPage() {
       }
     : isCredor
       ? {
-          icon: 'signature',
-          title: 'Assinaturas pendentes',
-          description: 'Contratos aguardando conclusão no fluxo de crédito.',
+          icon: 'file-check',
+          title: 'Contratos recentes',
+          description: 'Documentos e cronogramas em acompanhamento.',
           footerTo: '/contratos',
-          footerLabel: 'Ver todas as pendências',
-          items: (contractsAwaitingSignature.length ? contractsAwaitingSignature : recentContracts)
+          footerLabel: 'Ver contratos',
+          items: recentContracts
             .slice(0, 3)
             .map((contract) => ({
               kind: 'resource',
               key: `contract-${contract.id}`,
               to: `/contratos?contratoId=${contract.id}`,
-              icon: 'signature',
+              icon: 'file-check',
               title: contract.finalidade || 'Contrato de empréstimo',
               subtitle: `${contract.numeroContrato} · ${formatDateTime(
                 contract.dataFormalizacao ?? contract.dataGeracao
@@ -1214,12 +1451,12 @@ function DashboardOverviewPage() {
             }))
         }
       : {
-          icon: 'signature',
-          title: 'Assinaturas pendentes',
-          description: 'Contratos aguardando sua assinatura.',
+          icon: 'file-check',
+          title: 'Contratos recentes',
+          description: 'Documentos e cronogramas em acompanhamento.',
           footerTo: '/contratos',
-          footerLabel: 'Ver todas as pendências',
-          items: (contractsAwaitingSignature.length ? contractsAwaitingSignature : recentContracts)
+          footerLabel: 'Ver contratos',
+          items: recentContracts
             .slice(0, 3)
             .map((contract) => ({
               kind: 'resource',
@@ -1261,7 +1498,7 @@ function DashboardOverviewPage() {
       <MessageBanner type="error">{error}</MessageBanner>
       <BankAccountNotice
         show={!loading && requiresBankAccount && !bankAccount}
-        message="Cadastre uma conta bancária em Minha conta para liberar propostas, aceite e assinatura."
+        message="Cadastre uma conta bancária em Minha conta para liberar propostas, aceite e contratos."
       />
       <MessageBanner type="info">{panelNotice}</MessageBanner>
       <MessageBanner type={adminActionType}>{adminActionMessage}</MessageBanner>
@@ -1273,37 +1510,39 @@ function DashboardOverviewPage() {
         </div>
       </section>
 
-      <section className="dashboard-reference-stat-grid">
-        {summaryCards.map((card) => (
-          <article key={card.label} className="dashboard-reference-stat-card">
-            <div className="dashboard-reference-stat-icon" aria-hidden="true">
-              <UiIcon name={card.icon} size={24} />
-            </div>
+      {!isSolicitante ? (
+        <section className="dashboard-reference-stat-grid">
+          {summaryCards.map((card) => (
+            <article key={card.label} className="dashboard-reference-stat-card">
+              <div className="dashboard-reference-stat-icon" aria-hidden="true">
+                <UiIcon name={card.icon} size={24} />
+              </div>
 
-            <div className="dashboard-reference-stat-copy">
-              <span>{card.label}</span>
-              <strong>{loading ? '--' : card.value}</strong>
-              <small>{loading ? 'Atualizando dados...' : card.helper}</small>
-            </div>
-          </article>
-        ))}
-      </section>
+              <div className="dashboard-reference-stat-copy">
+                <span>{card.label}</span>
+                <strong>{loading ? '--' : card.value}</strong>
+                <small>{loading ? 'Atualizando dados...' : card.helper}</small>
+              </div>
+            </article>
+          ))}
+        </section>
+      ) : null}
 
       {isSolicitante ? (
-        <DashboardBorrowerCommitmentPanel
+        <DashboardBorrowerSimplePanel
           loading={loading}
           totalOutstandingInstallmentValue={totalOutstandingInstallmentValue}
-          totalOverdueOutstandingValue={totalOverdueOutstandingValue}
-          totalPaidInstallmentValue={totalPaidInstallmentValue}
           paidInstallmentProgress={paidInstallmentProgress}
           openInstallments={openInstallments}
           overdueInstallments={overdueInstallments}
           paidInstallments={paidInstallments}
           installments={installments}
           nextInstallments={nextInstallments}
-          contractsAwaitingSignature={contractsAwaitingSignature}
-          myProposals={myProposals}
+          contracts={contracts}
           notifications={notifications}
+          creditScore={user?.scoreCredito}
+          financialOccupation={user?.tipoOcupacao ?? user?.profissao}
+          monthlyIncome={user?.rendaMensal}
         />
       ) : (
         <section className="dashboard-reference-panel dashboard-reference-chart-panel">
@@ -1366,33 +1605,35 @@ function DashboardOverviewPage() {
         </section>
       )}
 
-      <div className="dashboard-reference-bottom-grid">
-        <DashboardListPanel
-          panel={primaryPanel}
-          loading={loading}
-          emptyTitle={
-            isCredor
-              ? 'Sem propostas em fila.'
-              : isAdmin
-                ? 'Sem parcelas para tratar.'
-                : 'Sem parcelas programadas.'
-          }
-          emptyDescription={
-            isCredor
-              ? 'Quando novas ordens chegarem, elas aparecerão aqui.'
-              : isAdmin
-                ? 'O fluxo financeiro volta a aparecer aqui assim que houver movimento.'
-                : 'Quando houver novos vencimentos, eles aparecerão aqui.'
-          }
-        />
+      {!isSolicitante ? (
+        <div className="dashboard-reference-bottom-grid">
+          <DashboardListPanel
+            panel={primaryPanel}
+            loading={loading}
+            emptyTitle={
+              isCredor
+                ? 'Sem propostas em fila.'
+                : isAdmin
+                  ? 'Sem parcelas para tratar.'
+                  : 'Sem parcelas programadas.'
+            }
+            emptyDescription={
+              isCredor
+                ? 'Quando novas ordens chegarem, elas aparecerão aqui.'
+                : isAdmin
+                  ? 'O fluxo financeiro volta a aparecer aqui assim que houver movimento.'
+                  : 'Quando houver novos vencimentos, eles aparecerão aqui.'
+            }
+          />
 
-        <DashboardListPanel
-          panel={secondaryPanel}
-          loading={loading}
-          emptyTitle="Sem pendências agora."
-          emptyDescription="Novos contratos, alertas ou assinaturas aparecerão aqui assim que avançarem no fluxo."
-        />
-      </div>
+          <DashboardListPanel
+            panel={secondaryPanel}
+            loading={loading}
+            emptyTitle="Sem itens recentes."
+            emptyDescription="Novos contratos e alertas aparecerão aqui assim que avançarem no fluxo."
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

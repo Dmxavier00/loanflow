@@ -9,7 +9,16 @@ import StatusBadge from '../componentes/StatusBadge';
 import UiIcon from '../componentes/UiIcon';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
-import { formatCurrency, formatDate, formatDateTime, formatLabel, formatProposalHeadline } from '../biblioteca/format';
+import {
+  formatCreditScore,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatLabel,
+  formatProposalHeadline,
+  formatProposalNumber,
+  formatRiskLevel
+} from '../biblioteca/format';
 
 const interestRateOptions = Array.from({ length: 21 }, (_, index) => {
   const taxa = index + 5;
@@ -61,6 +70,7 @@ const statusOptions = [
   'REJEITADA',
   'CANCELADA',
   'CONTRATADA',
+  'QUITADA',
   'EXPIRADA'
 ];
 
@@ -83,6 +93,18 @@ const normalizeInterestRate = (value) => {
 };
 
 const getProposalPipelineLabel = (proposal) => {
+  if (proposal.contratoStatus === 'QUITADO' || proposal.status === 'QUITADA') {
+    return 'Contrato quitado';
+  }
+
+  if (proposal.status === 'CONTRATADA') {
+    return 'Contrato ativo em acompanhamento';
+  }
+
+  if (proposal.status === 'REJEITADA') {
+    return 'Encerrada por rejeição do credor';
+  }
+
   if (proposal.credorId) {
     return 'Em acompanhamento por um credor';
   }
@@ -101,6 +123,10 @@ const getProposalPipelineLabel = (proposal) => {
 
   return 'Disponível para aceite de um credor';
 };
+
+const getProposalStatusValue = (proposal) => (
+  proposal?.contratoStatus === 'QUITADO' ? 'QUITADA' : proposal?.status
+);
 
 export default function PropostasPage() {
   const { token, hasRole, hasBankAccount } = useAuth();
@@ -299,7 +325,7 @@ export default function PropostasPage() {
     try {
       await runAction(
         () => api.acceptProposal(token, selectedProposal.id),
-        `Proposta #${selectedProposal.id} aceita com sucesso.`
+        `Proposta ${formatProposalNumber(selectedProposal)} aceita e contratada com sucesso.`
       );
     } finally {
       setAcceptingSelectedProposal(false);
@@ -314,7 +340,7 @@ export default function PropostasPage() {
         show={(isSolicitante || isCredor) && !hasBankAccount}
         message={
           isCredor
-            ? 'Cadastre uma conta bancária em Minha conta antes de aceitar propostas.'
+            ? 'Cadastre uma conta bancária em Minha conta antes de aceitar e formalizar propostas.'
             : 'Cadastre uma conta bancária em Minha conta antes de criar ou editar propostas.'
         }
       />
@@ -441,14 +467,16 @@ export default function PropostasPage() {
                   <div className="borrower-proposal-card-head">
                     <div className="borrower-proposal-card-copy">
                       <div className="borrower-proposal-card-topline">
-                        <span className="borrower-proposal-card-id">Proposta #{proposal.id}</span>
-                        <span className="borrower-proposal-card-pipeline">{getProposalPipelineLabel(proposal)}</span>
+                        <span className="borrower-proposal-card-id">Proposta {formatProposalNumber(proposal)}</span>
+                        {getProposalPipelineLabel(proposal) ? (
+                          <span className="borrower-proposal-card-pipeline">{getProposalPipelineLabel(proposal)}</span>
+                        ) : null}
                       </div>
                       <h3>{proposal.finalidade}</h3>
                       <p>{proposal.descricaoDetalhada}</p>
                     </div>
                     <div className="borrower-proposal-card-actions">
-                      <StatusBadge value={proposal.status} />
+                      <StatusBadge value={getProposalStatusValue(proposal)} />
                       <div className="inline-button-group">
                         {editableStatuses.includes(proposal.status) ? (
                           <button
@@ -502,10 +530,18 @@ export default function PropostasPage() {
                       <dt>Expira em</dt>
                       <dd>{formatDate(proposal.dataExpiracao)}</dd>
                     </div>
-                    <div className="borrower-proposal-detail-wide">
-                      <dt>Fluxo atual</dt>
-                      <dd>{getProposalPipelineLabel(proposal)}</dd>
-                    </div>
+                    {proposal.numeroContrato ? (
+                      <div>
+                        <dt>Contrato</dt>
+                        <dd>{proposal.numeroContrato}</dd>
+                      </div>
+                    ) : null}
+                    {getProposalPipelineLabel(proposal) ? (
+                      <div className="borrower-proposal-detail-wide">
+                        <dt>Fluxo atual</dt>
+                        <dd>{getProposalPipelineLabel(proposal)}</dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </article>
               ))}
@@ -523,7 +559,6 @@ export default function PropostasPage() {
         <SectionCard
           className="creditor-order-section"
           title="Ordens aguardando aceite"
-          subtitle="Selecione uma proposta aberta para assumir a operação simulada como credor."
         >
           <div className="filters-row">
             <label>
@@ -589,8 +624,10 @@ export default function PropostasPage() {
                       <strong>{formatProposalHeadline(proposal)}</strong>
                       <p>{proposal.finalidade}</p>
                       <small>
-                        Proposta #{proposal.id} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
-                        {formatCurrency(proposal.valorSolicitado)} | {proposal.prazoMeses} meses | Expira em{' '}
+                        Proposta {formatProposalNumber(proposal)} | {formatLabel(proposal.categoriaFinalidade)} |{' '}
+                        {formatCurrency(proposal.valorSolicitado)} | Score{' '}
+                        {formatCreditScore(proposal.solicitanteScoreCredito)} |{' '}
+                        {formatRiskLevel(proposal.solicitanteNivelRisco)} | {proposal.prazoMeses} meses | Expira em{' '}
                         {formatDate(proposal.dataExpiracao)}
                       </small>
                     </div>

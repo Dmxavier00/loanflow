@@ -28,6 +28,7 @@ const labelWordReplacements = {
   Estavel: 'Estável',
   Expiracao: 'Expiração',
   Historico: 'Histórico',
+  Medio: 'Médio',
   Nao: 'Não',
   Numero: 'Número',
   Operacao: 'Operação',
@@ -55,6 +56,22 @@ export function formatCurrency(value) {
     return '-';
   }
   return currencyFormatter.format(Number(value));
+}
+
+export function formatCreditScore(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return '-';
+  }
+
+  return `${Math.max(0, Math.min(100, Number(value)))}/100`;
+}
+
+export function formatRiskLevel(value) {
+  if (!value) {
+    return '-';
+  }
+
+  return `Risco ${formatLabel(value).toLowerCase()}`;
 }
 
 export function formatDate(value) {
@@ -95,7 +112,21 @@ export function formatProposalHeadline(proposal) {
     return applicantName;
   }
 
-  return proposal.id ? `Proposta #${proposal.id}` : 'Proposta';
+  const fallbackId = proposal.propostaId ?? proposal.id;
+  return fallbackId ? `Proposta #${fallbackId}` : 'Proposta';
+}
+
+export function formatProposalNumber(proposal) {
+  if (!proposal) {
+    return '-';
+  }
+
+  if (proposal.numeroProposta) {
+    return proposal.numeroProposta;
+  }
+
+  const fallbackId = proposal.propostaId ?? proposal.id;
+  return fallbackId ? `#${fallbackId}` : '-';
 }
 
 export function roleSummary(role) {

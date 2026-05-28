@@ -120,11 +120,6 @@ export default function AppShell() {
             <div className="sidebar-brand">
               <span className="sidebar-label sidebar-brand-label">Workspace financeiro</span>
             </div>
-            <div className="sidebar-profile">
-              <strong>{user?.nome}</strong>
-              <span>{roleSummary(user?.papel)}</span>
-              <small>{user?.email}</small>
-            </div>
           </div>
 
           <nav className="sidebar-nav" aria-label="Principal">
@@ -145,10 +140,12 @@ export default function AppShell() {
             ))}
           </nav>
 
-          <button type="button" className="secondary-button sidebar-button" onClick={logout}>
-            <UiIcon name="logout" size={18} />
-            Encerrar sessão
-          </button>
+          <div className="sidebar-footer">
+            <button type="button" className="secondary-button sidebar-button" onClick={logout}>
+              <UiIcon name="logout" size={18} />
+              Encerrar sessão
+            </button>
+          </div>
         </aside>
 
         <div className="shell-main">

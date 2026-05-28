@@ -41,9 +41,9 @@ public class ParcelaService {
 	}
 
 	@Transactional
-	public void gerarParcelas(Contrato contrato, Usuario usuario, String ipOrigem) {
+	public boolean gerarParcelas(Contrato contrato, Usuario usuario, String ipOrigem) {
 		if (parcelaRepository.existsByContratoId(contrato.getId())) {
-			return;
+			return false;
 		}
 		var proposta = contrato.getProposta();
 		var principal = proposta.getValorSolicitado();
@@ -67,12 +67,15 @@ public class ParcelaService {
 
 		parcelaRepository.saveAll(parcelas);
 		auditoriaService.registrar(usuario, AuditoriaAcao.GERAR_PARCELAS, "Contrato", contrato.getId(), "Parcelas geradas após formalização do contrato.", ipOrigem);
+		return true;
 	}
 
 	@Transactional(readOnly = true)
 	public List<ParcelaResponse> listarPorContrato(Long contratoId) {
+		var usuario = usuarioService.usuarioAtual();
 		return parcelaRepository.findAll(
-			Specification.where(specContratoId(contratoId)),
+			Specification.where(specAcessivelAoUsuario(usuario))
+				.and(specContratoId(contratoId)),
 			Sort.by(Sort.Direction.ASC, "numero")
 		).stream()
 			.map(ParcelaResponse::from)

@@ -2,6 +2,7 @@ package com.api.loanflow.proposta.dominio;
 
 import com.api.loanflow.usuario.dominio.Credor;
 import com.api.loanflow.usuario.dominio.SolicitanteCredito;
+import com.api.loanflow.contrato.dominio.Contrato;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -27,6 +29,9 @@ public class Proposta {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Column(name = "numero_proposta", nullable = false, unique = true, length = 40)
+	private String numeroProposta;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "solicitante_id", nullable = false)
 	private SolicitanteCredito solicitante;
@@ -34,6 +39,9 @@ public class Proposta {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "credor_id")
 	private Credor credor;
+
+	@OneToOne(mappedBy = "proposta", fetch = FetchType.LAZY)
+	private Contrato contrato;
 
 	@Column(name = "valor_solicitado", nullable = false, precision = 18, scale = 2)
 	private BigDecimal valorSolicitado;
@@ -83,6 +91,14 @@ public class Proposta {
 		return id;
 	}
 
+	public String getNumeroProposta() {
+		return numeroProposta;
+	}
+
+	public void setNumeroProposta(String numeroProposta) {
+		this.numeroProposta = numeroProposta;
+	}
+
 	public SolicitanteCredito getSolicitante() {
 		return solicitante;
 	}
@@ -97,6 +113,14 @@ public class Proposta {
 
 	public void setCredor(Credor credor) {
 		this.credor = credor;
+	}
+
+	public Contrato getContrato() {
+		return contrato;
+	}
+
+	public void setContrato(Contrato contrato) {
+		this.contrato = contrato;
 	}
 
 	public BigDecimal getValorSolicitado() {

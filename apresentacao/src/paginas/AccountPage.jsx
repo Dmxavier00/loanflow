@@ -6,7 +6,14 @@ import UiIcon from '../componentes/UiIcon';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
 import { getBankSelectOptions } from '../biblioteca/bankOptions';
-import { formatCurrency, formatDateTime, formatLabel, roleSummary } from '../biblioteca/format';
+import {
+  formatCreditScore,
+  formatCurrency,
+  formatDateTime,
+  formatLabel,
+  formatRiskLevel,
+  roleSummary
+} from '../biblioteca/format';
 import { formatCep, formatCpf, isValidCep } from '../biblioteca/validation';
 
 const maritalStatusOptions = [
@@ -579,32 +586,56 @@ export default function AccountPage() {
   );
 
   const metrics = useMemo(
-    () => [
-      {
+    () => {
+      const baseMetrics = [
+        {
         icon: 'user',
         label: 'Perfil',
         value: roleSummary(user?.papel),
-        tone: 'blue'
-      },
-      {
-        icon: 'shield-check',
-        label: 'Status',
-        value: formatLabel(user?.status ?? 'ATIVO'),
-        tone: 'green'
-      },
-      {
+        tone: user?.papel === 'SOLICITANTE' ? 'brand' : 'blue'
+        },
+        {
         icon: 'id-card',
         label: 'Identificador da conta',
         value: getDisplayId(user?.id),
-        tone: 'blue'
-      },
-      {
-        icon: 'clock',
-        label: 'Última atualização',
-        value: bankAccountUpdatedAt,
-        tone: 'violet'
+        tone: user?.papel === 'SOLICITANTE' ? 'brand' : 'blue'
+        }
+      ];
+
+      if (user?.papel === 'SOLICITANTE') {
+        return [
+          ...baseMetrics,
+          {
+            icon: 'chart',
+            label: 'Score',
+            value: formatCreditScore(user?.scoreCredito),
+            tone: 'brand'
+          },
+          {
+            icon: 'shield-check',
+            label: 'Risco',
+            value: formatRiskLevel(user?.nivelRisco),
+            tone: 'brand'
+          }
+        ];
       }
-    ],
+
+      return [
+        ...baseMetrics,
+        {
+          icon: 'shield-check',
+          label: 'Status',
+          value: formatLabel(user?.status ?? 'ATIVO'),
+          tone: 'green'
+        },
+        {
+          icon: 'clock',
+          label: 'Última atualização',
+          value: bankAccountUpdatedAt,
+          tone: 'violet'
+        }
+      ];
+    },
     [bankAccountUpdatedAt, user]
   );
   const displayedPasswordValue = isEditingPassword ? passwordForm.senha : MASKED_PASSWORD_VALUE;

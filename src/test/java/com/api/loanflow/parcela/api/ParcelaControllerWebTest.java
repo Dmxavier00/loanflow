@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,11 +36,11 @@ class ParcelaControllerWebTest {
 	}
 
 	@Test
-	void listarPorContratoIdDeveSerRestritoAoAdmin() throws Exception {
+	void listarPorContratoIdDevePermitirSolicitanteCredorEAdmin() throws Exception {
 		mockMvc.perform(get("/contratos/1/parcelas")
 				.with(user("credor@loanflow.test").roles("CREDOR")))
-			.andExpect(status().isForbidden());
+			.andExpect(status().isOk());
 
-		verifyNoInteractions(parcelaService);
+		verify(parcelaService).listarPorContrato(1L);
 	}
 }

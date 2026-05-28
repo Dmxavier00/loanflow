@@ -3,6 +3,7 @@ package com.api.loanflow.usuario.api;
 import com.api.loanflow.compartilhado.excecao.RecursoNaoEncontradoException;
 import com.api.loanflow.usuario.api.dto.ContaBancariaResponse;
 import com.api.loanflow.usuario.api.dto.UsuarioResponse;
+import com.api.loanflow.usuario.dominio.NivelRiscoCredito;
 import com.api.loanflow.usuario.aplicacao.UsuarioService;
 import com.api.loanflow.usuario.dominio.Role;
 import com.api.loanflow.usuario.dominio.TipoContaBancaria;
@@ -46,6 +47,8 @@ class UsuarioControllerWebTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(10))
 			.andExpect(jsonPath("$.email").value("usuario@loanflow.test"))
+			.andExpect(jsonPath("$.scoreCredito").value(75))
+			.andExpect(jsonPath("$.nivelRisco").value("BAIXO"))
 			.andExpect(jsonPath("$.contaBancariaId").value(77));
 	}
 
@@ -180,6 +183,8 @@ class UsuarioControllerWebTest {
 			null,
 			contaBancariaId,
 			new java.math.BigDecimal("4800.00"),
+			75,
+			NivelRiscoCredito.BAIXO,
 			null,
 			null
 		);

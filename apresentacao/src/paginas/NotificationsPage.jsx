@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import EmptyState from '../componentes/EmptyState';
 import MessageBanner from '../componentes/MessageBanner';
 import SectionCard from '../componentes/SectionCard';
-import StatusBadge from '../componentes/StatusBadge';
+import UiIcon from '../componentes/UiIcon';
 import { useAuth } from '../contexto/AuthContext';
 import { api } from '../biblioteca/api';
 import { formatDateTime } from '../biblioteca/format';
@@ -13,11 +13,18 @@ const filterDefaults = {
   tipo: ''
 };
 
+const notificationsPerPage = 10;
+
+function getNotificationTimestamp(notification) {
+  return new Date(notification.dataEnvio).getTime() || 0;
+}
+
 export default function NotificationsPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [filters, setFilters] = useState(filterDefaults);
   const [notifications, setNotifications] = useState([]);
+  const [notificationPage, setNotificationPage] = useState(1);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(true);
@@ -53,6 +60,7 @@ export default function NotificationsPage() {
     const { name, value } = event.target;
     const nextFilters = { ...filters, [name]: value };
     setFilters(nextFilters);
+    setNotificationPage(1);
     loadNotifications(nextFilters);
   };
 
@@ -67,6 +75,21 @@ export default function NotificationsPage() {
     } catch (actionError) {
       setError(actionError.message);
     }
+  };
+
+  const handleNotificationCardClick = (notification) => {
+    if (!notification.lida) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
+  const handleNotificationCardKeyDown = (event, notification) => {
+    if (notification.lida || (event.key !== 'Enter' && event.key !== ' ')) {
+      return;
+    }
+
+    event.preventDefault();
+    handleMarkAsRead(notification.id);
   };
 
   const openReference = (notification) => {
@@ -89,9 +112,26 @@ export default function NotificationsPage() {
     }
   };
 
+  const orderedNotifications = [...notifications].sort((current, next) => {
+    const dateOrder = getNotificationTimestamp(next) - getNotificationTimestamp(current);
+
+    if (dateOrder !== 0) {
+      return dateOrder;
+    }
+
+    return (next.id ?? 0) - (current.id ?? 0);
+  });
+  const totalNotificationPages = Math.max(1, Math.ceil(orderedNotifications.length / notificationsPerPage));
+  const activeNotificationPage = Math.min(notificationPage, totalNotificationPages);
+  const notificationStartIndex = (activeNotificationPage - 1) * notificationsPerPage;
+  const visibleNotifications = orderedNotifications.slice(
+    notificationStartIndex,
+    notificationStartIndex + notificationsPerPage
+  );
+
   return (
     <div className="page-stack">
-      <SectionCard title="Filtros de notificação" subtitle="Refine por leitura e tipo.">
+      <SectionCard title="Central de notificações">
         <div className="filters-row">
           <label>
             Leitura
@@ -114,47 +154,92 @@ export default function NotificationsPage() {
             </select>
           </label>
         </div>
-      </SectionCard>
 
-      <MessageBanner type="error">{error}</MessageBanner>
-      <MessageBanner type="success">{feedback}</MessageBanner>
+        <MessageBanner type="error">{error}</MessageBanner>
+        <MessageBanner type="success">{feedback}</MessageBanner>
 
-      <SectionCard title="Central de notificações" subtitle="Eventos do fluxo transacional do backend.">
         {loading ? (
           <p className="helper-text">Carregando notificações...</p>
         ) : notifications.length ? (
-          <div className="list-stack">
-            {notifications.map((notification) => (
-              <article key={notification.id} className="list-card">
-                <div>
-                  <strong>{notification.mensagem}</strong>
-                  <p>
-                    Referência: {notification.referenciaTipo ?? 'Sem referência'}
-                    {notification.referenciaId ? ` #${notification.referenciaId}` : ''}
-                  </p>
-                  <small>{formatDateTime(notification.dataEnvio)}</small>
-                </div>
-                <div className="stack-actions">
-                  <StatusBadge value={notification.tipo} />
-                  <div className="inline-button-group">
-                    {!notification.lida ? (
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => handleMarkAsRead(notification.id)}
-                      >
-                        Marcar como lida
-                      </button>
-                    ) : null}
+          <div className="creditor-order-results">
+            <div className="list-stack">
+              {visibleNotifications.map((notification) => (
+                <article
+                  key={notification.id}
+                  className={`list-card notification-card ${notification.lida ? 'is-read' : 'is-unread'}`}
+                  role={!notification.lida ? 'button' : undefined}
+                  tabIndex={!notification.lida ? 0 : undefined}
+                  aria-label={!notification.lida ? `Marcar notificacao ${notification.id} como lida` : undefined}
+                  onClick={() => handleNotificationCardClick(notification)}
+                  onKeyDown={(event) => handleNotificationCardKeyDown(event, notification)}
+                >
+                  <div>
+                    <strong>{notification.mensagem}</strong>
+                    <p>
+                      Referência: {notification.referenciaTipo ?? 'Sem referência'}
+                      {notification.referenciaId ? ` #${notification.referenciaId}` : ''}
+                    </p>
+                    <small>{formatDateTime(notification.dataEnvio)}</small>
+                  </div>
+                  <div className="stack-actions">
+                    <span className={`notification-read-note ${notification.lida ? 'is-read' : 'is-unread'}`}>
+                      {notification.lida ? 'Lida' : 'Não lida'}
+                    </span>
                     {notification.referenciaId ? (
-                      <button type="button" className="primary-button" onClick={() => openReference(notification)}>
-                        Abrir referência
-                      </button>
+                      <div className="inline-button-group">
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openReference(notification);
+                          }}
+                        >
+                          Abrir referência
+                        </button>
+                      </div>
                     ) : null}
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))}
+            </div>
+
+            <div className="creditor-order-pagination">
+              <div className="creditor-order-pagination-copy">
+                <strong>
+                  Página {activeNotificationPage} de {totalNotificationPages}
+                </strong>
+                <span>
+                  Mostrando {Math.min(notificationStartIndex + 1, orderedNotifications.length)} a{' '}
+                  {Math.min(notificationStartIndex + notificationsPerPage, orderedNotifications.length)} de{' '}
+                  {orderedNotifications.length} notificações
+                </span>
+              </div>
+              <div className="creditor-order-pagination-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setNotificationPage((currentPage) => Math.max(1, currentPage - 1))}
+                  disabled={activeNotificationPage === 1}
+                >
+                  <span className="creditor-order-pagination-icon creditor-order-pagination-icon-left" aria-hidden="true">
+                    <UiIcon name="arrow-right" size={16} />
+                  </span>
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
+                    setNotificationPage((currentPage) => Math.min(totalNotificationPages, currentPage + 1))
+                  }
+                  disabled={activeNotificationPage === totalNotificationPages}
+                >
+                  Próxima
+                  <UiIcon name="arrow-right" size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <EmptyState

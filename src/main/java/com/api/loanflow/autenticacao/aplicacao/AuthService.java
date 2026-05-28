@@ -102,6 +102,7 @@ public class AuthService {
 			solicitante.setUsuario(usuario);
 			solicitante.setRendaMensal(request.rendaMensal());
 			solicitante.setTipoOcupacao(normalizarTexto(request.tipoOcupacao()));
+			solicitante.recalcularScoreCreditoSimulado();
 			solicitanteRepository.save(solicitante);
 		}
 		if (papel == Role.CREDOR) {
@@ -150,6 +151,8 @@ public class AuthService {
 				administradorId,
 				contaBancariaId,
 				solicitante == null ? null : solicitante.getRendaMensal(),
+				solicitante == null ? null : solicitante.getScoreCreditoSimulado(),
+				solicitante == null ? null : solicitante.getNivelRisco(),
 				credor == null ? null : credor.getSaldoDisponivelSimulado(),
 				credor == null ? null : credor.getLimiteOperacoes()
 			)

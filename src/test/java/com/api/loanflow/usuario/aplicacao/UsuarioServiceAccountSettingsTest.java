@@ -113,7 +113,10 @@ class UsuarioServiceAccountSettingsTest {
 		);
 
 		assertEquals(new BigDecimal("4800.00"), solicitante.getRendaMensal());
+		assertEquals(75, solicitante.getScoreCreditoSimulado());
 		assertEquals(new BigDecimal("4800.00"), response.rendaMensal());
+		assertEquals(75, response.scoreCredito());
+		assertEquals("BAIXO", response.nivelRisco().name());
 		assertEquals(21L, response.solicitanteId());
 	}
 

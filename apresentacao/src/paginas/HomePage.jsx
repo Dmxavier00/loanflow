@@ -12,7 +12,7 @@ const heroStats = [
 
 const trustBarItems = [
   { label: 'Originação guiada', value: 'propostas com dados e contexto' },
-  { label: 'Formalização contínua', value: 'aceite, contrato e assinatura' },
+  { label: 'Formalização contínua', value: 'aceite, contrato e parcelas' },
   { label: 'Visão financeira', value: 'parcelas, vencimentos e registros' },
   { label: 'Governança ativa', value: 'alertas, histórico e rastreabilidade' }
 ];
@@ -28,7 +28,7 @@ const solutionCards = [
     tag: 'Contratos',
     title: 'Formalização com menos atrito',
     description:
-      'Conduza aceite, assinatura e emissão de contratos em um fluxo contínuo para ganhar velocidade.'
+      'Conduza aceite, emissão e formalização de contratos em um fluxo contínuo para ganhar velocidade.'
   },
   {
     tag: 'Parcelas',

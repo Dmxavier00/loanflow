@@ -2,8 +2,10 @@ package com.api.loanflow.proposta.aplicacao;
 
 import com.api.loanflow.auditoria.aplicacao.AuditoriaService;
 import com.api.loanflow.auditoria.dominio.AuditoriaAcao;
+import com.api.loanflow.compartilhado.aplicacao.NumeroNegocioService;
 import com.api.loanflow.notificacao.aplicacao.NotificacaoService;
 import com.api.loanflow.notificacao.dominio.TipoNotificacao;
+import com.api.loanflow.contrato.aplicacao.ContratoService;
 import com.api.loanflow.proposta.api.dto.AtualizarPropostaRequest;
 import com.api.loanflow.proposta.api.dto.CriarPropostaRequest;
 import com.api.loanflow.proposta.api.dto.PropostaResponse;
@@ -41,6 +43,8 @@ public class PropostaService {
 	private final NotificacaoService notificacaoService;
 	private final PoliticaCreditoService politicaCreditoService;
 	private final PoliticaCredorService politicaCredorService;
+	private final NumeroNegocioService numeroNegocioService;
+	private final ContratoService contratoService;
 
 	public PropostaService(
 		PropostaRepository propostaRepository,
@@ -50,7 +54,9 @@ public class PropostaService {
 		AuditoriaService auditoriaService,
 		NotificacaoService notificacaoService,
 		PoliticaCreditoService politicaCreditoService,
-		PoliticaCredorService politicaCredorService
+		PoliticaCredorService politicaCredorService,
+		NumeroNegocioService numeroNegocioService,
+		ContratoService contratoService
 	) {
 		this.propostaRepository = propostaRepository;
 		this.solicitanteRepository = solicitanteRepository;
@@ -60,6 +66,8 @@ public class PropostaService {
 		this.notificacaoService = notificacaoService;
 		this.politicaCreditoService = politicaCreditoService;
 		this.politicaCredorService = politicaCredorService;
+		this.numeroNegocioService = numeroNegocioService;
+		this.contratoService = contratoService;
 	}
 
 	@Transactional
@@ -85,6 +93,9 @@ public class PropostaService {
 		proposta.setDescricaoDetalhada(request.descricaoDetalhada());
 		proposta.setDataExpiracao(calcularDataExpiracaoPadrao());
 		proposta.setStatus(PropostaStatus.AGUARDANDO_ACEITE);
+		proposta.setNumeroProposta(numeroNegocioService.gerarNumeroTemporario());
+		proposta = propostaRepository.saveAndFlush(proposta);
+		proposta.setNumeroProposta(numeroNegocioService.gerarNumeroProposta(proposta));
 		proposta = propostaRepository.save(proposta);
 
 		auditoriaService.registrar(usuario, AuditoriaAcao.CRIAR, "Proposta", proposta.getId(), "Proposta criada aguardando aceite de credor.", ipOrigem);
@@ -126,7 +137,8 @@ public class PropostaService {
 				PropostaStatus.EM_ANALISE,
 				PropostaStatus.APROVADA,
 				PropostaStatus.REJEITADA,
-				PropostaStatus.CONTRATADA
+				PropostaStatus.CONTRATADA,
+				PropostaStatus.QUITADA
 			)
 		).stream()
 			.map(PropostaResponse::from)
@@ -256,7 +268,14 @@ public class PropostaService {
 		proposta.setCredor(credor);
 		proposta.setStatus(PropostaStatus.ACEITA);
 		auditoriaService.registrar(usuario, AuditoriaAcao.ACEITAR, "Proposta", proposta.getId(), "Credor aceitou a proposta.", ipOrigem);
-		notificacaoService.criar(proposta.getSolicitante().getUsuario(), TipoNotificacao.PROPOSTA, "Sua proposta foi aceita por um credor.", "Proposta", proposta.getId());
+		contratoService.gerarEFormalizarAutomaticamente(proposta, usuario, ipOrigem);
+		notificacaoService.criar(
+			proposta.getSolicitante().getUsuario(),
+			TipoNotificacao.PROPOSTA,
+			"Sua proposta foi aceita e contratada automaticamente.",
+			"Proposta",
+			proposta.getId()
+		);
 		return PropostaResponse.from(proposta);
 	}
 
@@ -299,8 +318,13 @@ public class PropostaService {
 		if (!ehAdmin(usuario)) {
 			exigirSolicitanteDono(usuario, proposta);
 		}
-		if (proposta.getStatus() == PropostaStatus.ACEITA || proposta.getStatus() == PropostaStatus.APROVADA || proposta.getStatus() == PropostaStatus.CONTRATADA) {
-			throw new RegraNegocioException("Proposta aceita, aprovada ou contratada não pode ser cancelada por este fluxo.");
+		if (
+			proposta.getStatus() == PropostaStatus.ACEITA ||
+			proposta.getStatus() == PropostaStatus.APROVADA ||
+			proposta.getStatus() == PropostaStatus.CONTRATADA ||
+			proposta.getStatus() == PropostaStatus.QUITADA
+		) {
+			throw new RegraNegocioException("Proposta aceita, aprovada, contratada ou quitada não pode ser cancelada por este fluxo.");
 		}
 		proposta.setStatus(PropostaStatus.CANCELADA);
 		auditoriaService.registrar(usuario, AuditoriaAcao.CANCELAR, "Proposta", proposta.getId(), "Proposta cancelada.", ipOrigem);

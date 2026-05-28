@@ -5,23 +5,19 @@ package com.api.loanflow.contrato.dominio;
  */
 public enum ContratoStatus {
 	/**
-	 * Contrato gerado, mas ainda nao liberado para coleta de assinaturas.
+	 * Contrato gerado antes da formalizacao automatica final.
 	 */
 	GERADO,
 	/**
-	 * Contrato disponivel e aguardando as assinaturas obrigatorias.
-	 */
-	AGUARDANDO_ASSINATURAS,
-	/**
-	 * Pelo menos um signatario assinou, mas ainda faltam aceite(s).
-	 */
-	ASSINADO_PARCIALMENTE,
-	/**
-	 * Todas as assinaturas foram concluidas e o contrato foi formalizado.
+	 * Contrato formalizado e apto para gerar ou acompanhar parcelas.
 	 */
 	FORMALIZADO,
 	/**
-	 * Prazo de assinatura encerrado sem conclusao da formalizacao.
+	 * Contrato encerrado por pagamento integral das parcelas.
+	 */
+	QUITADO,
+	/**
+	 * Contrato encerrado sem formalizacao concluida.
 	 */
 	EXPIRADO,
 	/**
