@@ -1,6 +1,6 @@
 # LoanFlow
 
-Protótipo acadêmico de uma plataforma web de microcrédito P2P para TCC, com API Spring Boot, interface React e fluxo completo de proposta, contrato, formalização automática, parcelas, pagamentos e auditoria.
+Protótipo acadêmico de uma plataforma web de microcrédito P2P para TCC, com API Spring Boot, interface React e fluxo completo de proposta, contrato, formalização automática, acompanhamento de parcelas, pagamentos, notificações, administração e auditoria.
 
 ## Visão Geral
 
@@ -11,9 +11,10 @@ O projeto foi construído para demonstrar um fluxo funcional de concessão de cr
 - criação, análise e aprovação de propostas
 - geração de contrato em PDF com hash do documento
 - formalização automática do contrato quando o credor aceita a proposta
-- geração de parcelas e registro manual de pagamentos
-- notificações e trilha de auditoria
-- dashboard administrativo básico
+- acompanhamento de parcelas dentro do painel de contratos
+- registro manual de pagamentos
+- notificações por usuário e trilha de auditoria
+- dashboard, administração e auditoria para o perfil `ADMIN`
 
 ## Enquadramento Acadêmico
 
@@ -91,12 +92,12 @@ infraestrutura/persistencia
 - gestão do usuário autenticado em `/usuarios/me`
 - cadastro e manutenção de conta bancária
 - consulta de credores para composição do fluxo
-- criação, edição, submissão, aceite, análise, aprovação, rejeição e cancelamento de propostas
-- geração, consulta, formalização automática, download e cancelamento de contratos
-- geração e consulta de parcelas
+- criação, edição, submissão, aceite, análise, aprovação e cancelamento de propostas
+- geração, consulta, formalização automática e download de contratos
+- consulta de parcelas dentro do painel de contratos e por API
 - registro e cancelamento de pagamentos manuais
-- notificações por usuário
-- dashboard e auditoria administrativa
+- notificações por usuário, incluindo eventos de pagamento e quitação
+- dashboard, administração de usuários e auditoria administrativa
 - busca de endereço por CEP
 - SPA React servida pelo mesmo projeto
 
@@ -243,7 +244,9 @@ O projeto já possui integração entre o back-end e a SPA:
 - ao iniciar a aplicação, `LoanflowApplication` chama um bootstrap que verifica se o build do front precisa ser atualizado
 - quando necessário e possível, o back-end executa `npm run build` dentro de `apresentacao/`
 - os arquivos de `apresentacao/dist` são servidos pela própria aplicação Spring Boot
-- rotas navegáveis da SPA como `/dashboard`, `/minha-conta` e `/contratos` fazem forward para `index.html`
+- rotas navegáveis da SPA como `/dashboard`, `/solicitacoes`, `/contratos`, `/alertas`, `/administracao` e `/auditoria` fazem forward para `index.html`
+
+A rota antiga `/parcelas` é mantida apenas como compatibilidade e redireciona para `/contratos?view=parcelas`, onde o painel de parcelas fica embutido no contexto do contrato.
 
 Se o `npm`/Node não estiver disponível, ou se o build automático falhar, a API continua subindo normalmente. Nesse cenário, apenas a SPA embutida pode ficar desatualizada ou indisponível até um build manual.
 
@@ -280,23 +283,18 @@ VITE_API_BASE_URL=http://localhost:8080
 - `JWT_SECRET`
 - `JWT_EXPIRATION_MINUTES`
 - `CONTRACT_STORAGE_PATH`
-- `SIGNATURE_CHALLENGE_TTL_MINUTES`
-- `SIGNATURE_TERM_VERSION`
-- `SIGNATURE_CHALLENGE_LENGTH`
 - `LOANFLOW_FRONTEND_AUTO_BUILD`
 
 ## Fluxo Principal do Protótipo
 
 1. Usuário se cadastra como solicitante, credor ou administrador.
 2. O solicitante cria uma proposta de crédito.
-3. A proposta é submetida para análise.
-4. Um credor aceita a oportunidade.
-5. O credor inicia a análise e aprova a proposta.
-6. O sistema gera o contrato.
-7. O credor aceita a proposta e o contrato é formalizado automaticamente.
-8. As parcelas são criadas e passam a compor a agenda financeira da operação.
-9. O solicitante registra pagamentos manuais.
-10. O sistema gera notificações e registra auditoria dos eventos.
+3. A proposta é disponibilizada para aceite do credor.
+4. O credor aceita a oportunidade.
+5. O sistema valida a operação, gera o contrato em PDF e formaliza o contrato automaticamente.
+6. As parcelas são criadas e passam a compor a agenda financeira da operação.
+7. O solicitante registra pagamentos manuais.
+8. O sistema gera notificações e registra auditoria dos eventos.
 
 ## Endpoints Principais
 
@@ -344,7 +342,6 @@ POST /propostas/{id}/submeter
 POST /propostas/{id}/iniciar-analise
 POST /propostas/{id}/aceitar
 POST /propostas/{id}/aprovar
-POST /propostas/{id}/rejeitar
 POST /propostas/{id}/cancelar
 ```
 
@@ -355,7 +352,6 @@ POST /contratos/proposta/{propostaId}/gerar
 GET /contratos
 GET /contratos/{id}
 GET /contratos/{id}/download
-POST /contratos/{id}/cancelar
 ```
 
 ### Parcelas e Pagamentos
@@ -402,6 +398,7 @@ Artefatos gerados por esses scripts ficam em `artefatos/` e não são versionado
 
 ## Documentação Auxiliar
 
+- [documentacao/anotacoes-apresentacao.md](documentacao/anotacoes-apresentacao.md)
 - [documentacao/roteiro-postman.md](documentacao/roteiro-postman.md)
 - [documentacao/loanflow-api.http](documentacao/loanflow-api.http)
 
