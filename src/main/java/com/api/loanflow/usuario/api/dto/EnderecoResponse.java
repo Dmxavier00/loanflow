@@ -1,6 +1,6 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.Endereco;
+import com.api.loanflow.usuario.dominio.Endereco;
 
 public record EnderecoResponse(
 	String cep,

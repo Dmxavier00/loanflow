@@ -1,6 +1,6 @@
 package com.api.loanflow.pagamento.api.dto;
 
-import com.api.loanflow.pagamento.domain.FormaPagamento;
+import com.api.loanflow.pagamento.dominio.FormaPagamento;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

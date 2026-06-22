@@ -1,12 +1,13 @@
 package com.api.loanflow.fluxo;
 
-import com.api.loanflow.contrato.domain.ContratoStatus;
-import com.api.loanflow.contrato.infrastructure.persistence.ContratoRepository;
-import com.api.loanflow.parcela.infrastructure.persistence.ParcelaRepository;
-import com.api.loanflow.proposta.domain.PropostaStatus;
-import com.api.loanflow.proposta.infrastructure.persistence.PropostaRepository;
-import com.api.loanflow.usuario.infrastructure.persistence.CredorRepository;
-import com.api.loanflow.usuario.infrastructure.persistence.UsuarioRepository;
+import com.api.loanflow.contrato.dominio.ContratoStatus;
+import com.api.loanflow.contrato.infraestrutura.persistencia.ContratoRepository;
+import com.api.loanflow.parcela.dominio.ParcelaStatus;
+import com.api.loanflow.parcela.infraestrutura.persistencia.ParcelaRepository;
+import com.api.loanflow.proposta.dominio.PropostaStatus;
+import com.api.loanflow.proposta.infraestrutura.persistencia.PropostaRepository;
+import com.api.loanflow.usuario.infraestrutura.persistencia.CredorRepository;
+import com.api.loanflow.usuario.infraestrutura.persistencia.UsuarioRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,45 +71,10 @@ class FluxoPrincipalIntegrationTest {
 
 		postSemCorpo("/propostas/%d/aceitar".formatted(propostaId), credor.token())
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("ACEITA"));
+			.andExpect(jsonPath("$.status").value("CONTRATADA"));
 
-		postSemCorpo("/propostas/%d/iniciar-analise".formatted(propostaId), credor.token())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("EM_ANALISE"));
-
-		postSemCorpo("/propostas/%d/aprovar".formatted(propostaId), credor.token())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("APROVADA"));
-
-		var contratoResponse = postSemCorpo("/contratos/proposta/%d/gerar".formatted(propostaId), credor.token())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("AGUARDANDO_ASSINATURAS"))
-			.andReturn()
-			.getResponse()
-			.getContentAsString();
-
-		var contratoId = readJson(contratoResponse).get("id").asLong();
-
-		postJson("/contratos/%d/assinar".formatted(contratoId), solicitante.token(), """
-			{
-			  "aceite": true
-			}
-			""")
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.papelSignatario").value("SOLICITANTE"));
-
-		mockMvc.perform(get("/contratos/%d".formatted(contratoId))
-				.header("Authorization", bearer(credor.token())))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("ASSINADO_PARCIALMENTE"));
-
-		postJson("/contratos/%d/assinar".formatted(contratoId), credor.token(), """
-			{
-			  "aceite": true
-			}
-			""")
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.papelSignatario").value("CREDOR"));
+		var contrato = contratoRepository.findByPropostaId(propostaId).orElseThrow();
+		var contratoId = contrato.getId();
 
 		mockMvc.perform(get("/contratos/%d".formatted(contratoId))
 				.header("Authorization", bearer(credor.token())))
@@ -120,37 +87,73 @@ class FluxoPrincipalIntegrationTest {
 			.andExpect(jsonPath("$.status").value("CONTRATADA"));
 
 		var proposta = propostaRepository.findById(propostaId).orElseThrow();
-		var contrato = contratoRepository.findById(contratoId).orElseThrow();
+		contrato = contratoRepository.findById(contratoId).orElseThrow();
 
 		assertEquals(PropostaStatus.CONTRATADA, proposta.getStatus());
 		assertEquals(ContratoStatus.FORMALIZADO, contrato.getStatus());
+		assertTrue(contrato.getNumeroContrato().matches("CTR-\\d{4}-\\d{6,}"));
 		assertTrue(parcelaRepository.existsByContratoId(contratoId));
 		assertEquals(6, parcelaRepository.findByContratoIdOrderByNumeroAsc(contratoId).size());
 		assertTrue(Files.exists(Path.of(contrato.getPdfPath())));
 	}
 
 	@Test
-	void devePermitirFluxoDeRejeicaoAposAnalise() throws Exception {
-		var solicitante = registrarSolicitante("fluxo-rejeicao", new BigDecimal("5500.00"));
-		var credor = registrarCredor("fluxo-rejeicao", new BigDecimal("18000.00"));
+	void deveQuitarContratoQuandoTodasParcelasForemPagas() throws Exception {
+		var solicitante = registrarSolicitante("fluxo-quitacao", new BigDecimal("6000.00"));
+		var credor = registrarCredor("fluxo-quitacao", new BigDecimal("25000.00"));
 
-		var propostaId = criarProposta(solicitante.token(), new BigDecimal("1200.00"));
-
+		var propostaId = criarProposta(solicitante.token(), new BigDecimal("1500.00"));
 		postSemCorpo("/propostas/%d/aceitar".formatted(propostaId), credor.token())
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("ACEITA"));
+			.andExpect(jsonPath("$.status").value("CONTRATADA"))
+			.andExpect(jsonPath("$.contratoStatus").value("FORMALIZADO"));
 
-		postSemCorpo("/propostas/%d/iniciar-analise".formatted(propostaId), credor.token())
+		var contrato = contratoRepository.findByPropostaId(propostaId).orElseThrow();
+		for (var parcela : parcelaRepository.findByContratoIdOrderByNumeroAsc(contrato.getId())) {
+			postJson("/parcelas/%d/pagamentos".formatted(parcela.getId()), solicitante.token(), """
+				{
+				  "valorPago": %s,
+				  "formaPagamento": "PIX_MANUAL",
+				  "comprovante": "Pagamento integral da parcela %d"
+				}
+				""".formatted(parcela.getValorPrevisto().toPlainString(), parcela.getNumero()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("REGISTRADO"));
+		}
+
+		contrato = contratoRepository.findById(contrato.getId()).orElseThrow();
+		assertEquals(ContratoStatus.QUITADO, contrato.getStatus());
+		assertTrue(parcelaRepository.findByContratoIdOrderByNumeroAsc(contrato.getId()).stream()
+			.allMatch(parcela -> parcela.getStatus() == ParcelaStatus.PAGA));
+
+		mockMvc.perform(get("/propostas/minhas")
+				.header("Authorization", bearer(solicitante.token())))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("EM_ANALISE"));
+			.andExpect(jsonPath("$[0].status").value("QUITADA"))
+			.andExpect(jsonPath("$[0].contratoStatus").value("QUITADO"))
+			.andExpect(jsonPath("$[0].numeroContrato").value(contrato.getNumeroContrato()));
+	}
 
-		postSemCorpo("/propostas/%d/rejeitar".formatted(propostaId), credor.token())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value("REJEITADA"));
+	@Test
+	void gerarContratoManualDeveFormalizarAutomaticamenteQuandoPropostaJaEstiverAprovada() throws Exception {
+		var solicitante = registrarSolicitante("fluxo-geracao-manual", new BigDecimal("5500.00"));
+		var credor = registrarCredor("fluxo-geracao-manual", new BigDecimal("18000.00"));
 
+		var propostaId = criarProposta(solicitante.token(), new BigDecimal("1200.00"));
 		var proposta = propostaRepository.findById(propostaId).orElseThrow();
-		assertEquals(PropostaStatus.REJEITADA, proposta.getStatus());
-		assertTrue(contratoRepository.findByPropostaId(propostaId).isEmpty());
+		var credorUsuario = usuarioRepository.findByEmail(credor.email()).orElseThrow();
+		var entidadeCredor = credorRepository.findByUsuarioId(credorUsuario.getId()).orElseThrow();
+		proposta.setCredor(entidadeCredor);
+		proposta.setStatus(PropostaStatus.APROVADA);
+		propostaRepository.save(proposta);
+
+		postSemCorpo("/contratos/proposta/%d/gerar".formatted(propostaId), credor.token())
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("FORMALIZADO"));
+
+		var contrato = contratoRepository.findByPropostaId(propostaId).orElseThrow();
+		assertEquals(ContratoStatus.FORMALIZADO, contrato.getStatus());
+		assertTrue(parcelaRepository.existsByContratoId(contrato.getId()));
 	}
 
 	@Test
@@ -289,6 +292,7 @@ class FluxoPrincipalIntegrationTest {
 			.getResponse()
 			.getContentAsString();
 
+		assertTrue(readJson(response).get("numeroProposta").asText().matches("PPT-\\d{4}-\\d{6,}"));
 		return readJson(response).get("id").asLong();
 	}
 

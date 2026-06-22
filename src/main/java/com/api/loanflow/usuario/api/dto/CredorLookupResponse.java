@@ -1,6 +1,6 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.Credor;
+import com.api.loanflow.usuario.dominio.Credor;
 
 public record CredorLookupResponse(
 	Long credorId,

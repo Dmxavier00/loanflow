@@ -1,7 +1,7 @@
 package com.api.loanflow.notificacao.api.dto;
 
-import com.api.loanflow.notificacao.domain.Notificacao;
-import com.api.loanflow.notificacao.domain.TipoNotificacao;
+import com.api.loanflow.notificacao.dominio.Notificacao;
+import com.api.loanflow.notificacao.dominio.TipoNotificacao;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,6 @@
 package com.api.loanflow.usuario.api.dto;
 
-import com.api.loanflow.usuario.domain.TipoContaBancaria;
+import com.api.loanflow.usuario.dominio.TipoContaBancaria;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

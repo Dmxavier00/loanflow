@@ -1,8 +1,8 @@
 package com.api.loanflow.pagamento.api.dto;
 
-import com.api.loanflow.pagamento.domain.FormaPagamento;
-import com.api.loanflow.pagamento.domain.Pagamento;
-import com.api.loanflow.pagamento.domain.PagamentoStatus;
+import com.api.loanflow.pagamento.dominio.FormaPagamento;
+import com.api.loanflow.pagamento.dominio.Pagamento;
+import com.api.loanflow.pagamento.dominio.PagamentoStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

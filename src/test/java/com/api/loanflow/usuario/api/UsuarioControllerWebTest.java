@@ -1,12 +1,13 @@
 package com.api.loanflow.usuario.api;
 
-import com.api.loanflow.shared.exception.RecursoNaoEncontradoException;
+import com.api.loanflow.compartilhado.excecao.RecursoNaoEncontradoException;
 import com.api.loanflow.usuario.api.dto.ContaBancariaResponse;
 import com.api.loanflow.usuario.api.dto.UsuarioResponse;
-import com.api.loanflow.usuario.application.UsuarioService;
-import com.api.loanflow.usuario.domain.Role;
-import com.api.loanflow.usuario.domain.TipoContaBancaria;
-import com.api.loanflow.usuario.domain.UsuarioStatus;
+import com.api.loanflow.usuario.dominio.NivelRiscoCredito;
+import com.api.loanflow.usuario.aplicacao.UsuarioService;
+import com.api.loanflow.usuario.dominio.Role;
+import com.api.loanflow.usuario.dominio.TipoContaBancaria;
+import com.api.loanflow.usuario.dominio.UsuarioStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,6 +47,8 @@ class UsuarioControllerWebTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(10))
 			.andExpect(jsonPath("$.email").value("usuario@loanflow.test"))
+			.andExpect(jsonPath("$.scoreCredito").value(75))
+			.andExpect(jsonPath("$.nivelRisco").value("BAIXO"))
 			.andExpect(jsonPath("$.contaBancariaId").value(77));
 	}
 
@@ -151,7 +154,7 @@ class UsuarioControllerWebTest {
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.status").value(401))
 			.andExpect(jsonPath("$.error").value("Unauthorized"))
-			.andExpect(jsonPath("$.message").value("Autenticacao obrigatoria."));
+			.andExpect(jsonPath("$.message").value("Autenticação obrigatória."));
 
 		verifyNoInteractions(usuarioService);
 	}
@@ -180,6 +183,8 @@ class UsuarioControllerWebTest {
 			null,
 			contaBancariaId,
 			new java.math.BigDecimal("4800.00"),
+			75,
+			NivelRiscoCredito.BAIXO,
 			null,
 			null
 		);
